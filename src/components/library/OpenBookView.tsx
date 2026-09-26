@@ -87,7 +87,7 @@ export function OpenBookView({
                 <div className="flex justify-between items-start mb-8">
                   <span className="font-mono text-xs text-[#00ffff]/70 tracking-widest flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#00ffff] animate-pulse" />
-                    VOL. ∞ // ARCHIVO
+                    {book.shelf === 1 ? "GRUPO 1: HARDWARE (TEST-AND-SET)" : "GRUPO 2: SOFTWARE (SEMÁFOROS)"}
                   </span>
                   <BookOpen className="w-5 h-5 text-white/40" />
                 </div>
@@ -104,18 +104,34 @@ export function OpenBookView({
                   ))}
                 </div>
                 
-                <div className="flex flex-wrap gap-2 mt-12">
+                <div className="flex flex-wrap gap-2 mt-8">
                   {book.tags.map(tag => (
                     <span key={tag} className="px-3 py-1 bg-white/5 text-white/80 border border-white/10 font-mono text-xs uppercase tracking-wider rounded-sm">
                       {tag}
                     </span>
                   ))}
                 </div>
+
+                {/* Citaciones académicas del volumen */}
+                {book.citations && book.citations.length > 0 && (
+                  <div className="mt-8 p-3.5 bg-[#030811]/90 border border-[#00ffff]/30 rounded text-xs font-mono">
+                    <div className="text-[#00ffff] font-bold mb-1.5 flex items-center gap-1.5">
+                      <span>CITAS ACADÉMICAS EN TEXTO:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-white/70">
+                      {book.citations.map((cite, idx) => (
+                        <span key={idx} className="bg-[#00ffff]/10 px-2.5 py-1 rounded text-[#00ffff] border border-[#00ffff]/30 text-[11px]">
+                          {cite}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="relative z-10 mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
-                <span className="font-mono text-xs text-white/40">&lt; PÁGINA IZQUIERDA /&gt;</span>
-                <span className="font-mono text-xs text-white/40">SIGLO XXI // SISTEMA CENTRAL</span>
+                <span className="font-mono text-xs text-white/40">&lt; TEORÍA Y ALGORITMOS /&gt;</span>
+                <span className="font-mono text-xs text-white/40">MECANISMOS DE SINCRONIZACIÓN // SO CORE</span>
               </div>
             </div>
             
@@ -180,9 +196,9 @@ export function OpenBookView({
                   {/* Overlay elements over the 3D scene */}
                   <div className="absolute bottom-6 left-6 right-6 pointer-events-none z-20">
                     <div className="bg-[#030811]/80 backdrop-blur-md border border-[#00ffff]/30 p-4 font-mono text-xs text-[#00ffff]/80 shadow-[0_0_15px_rgba(0,255,255,0.1)]">
-                      &gt; INICIALIZANDO PROYECCIÓN HOLOGRÁFICA // <br/>
+                      &gt; SIMULADOR 3D DIDÁCTICO // <br/>
                       &gt; MÓDULO: {book.title.toUpperCase()} // <br/>
-                      <span className="text-white/60 mt-1 inline-block">INTERACCIÓN MANUAL HABILITADA_</span>
+                      <span className="text-white/60 mt-1 inline-block">INTERACCIÓN DIDÁCTICA HABILITADA_</span>
                     </div>
                   </div>
                 </>

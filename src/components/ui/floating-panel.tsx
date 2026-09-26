@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 
-interface FloatingPanelProps extends React.HTMLAttributes<HTMLDivElement> {
+interface FloatingPanelProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"> {
   children: React.ReactNode;
   expandable?: boolean;
   expandedContent?: React.ReactNode;

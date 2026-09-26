@@ -18,13 +18,15 @@ export function BookshelfScene({
 }) {
   const groupRef = useRef<THREE.Group>(null);
   
-  // Split books into two shelves
-  const shelf1Books = libraryBooks.slice(0, 27);
-  const shelf2Books = libraryBooks.slice(27);
+  // Split books into two shelves by topic (1 = Hardware TSL, 2 = Software Semaphores)
+  const shelf1Books = libraryBooks.filter((b) => b.shelf === 1);
+  const shelf2Books = libraryBooks.filter((b) => b.shelf === 2);
+
+  const bookSpacing = 0.55;
 
   // Helper to calculate startX to center a given array of books
   const getStartX = (books: any[]) => {
-    const totalWidth = (books.length - 1) * 0.35;
+    const totalWidth = (books.length - 1) * bookSpacing;
     return -totalWidth / 2;
   };
 
@@ -36,9 +38,9 @@ export function BookshelfScene({
   const selectedIndex2 = shelf2Books.findIndex((b) => b.id === selectedBookId);
   
   const targetX = selectedIndex1 !== -1 
-    ? -(startX1 + selectedIndex1 * 0.35) 
+    ? -(startX1 + selectedIndex1 * bookSpacing) 
     : selectedIndex2 !== -1 
-      ? -(startX2 + selectedIndex2 * 0.35) 
+      ? -(startX2 + selectedIndex2 * bookSpacing) 
       : 0;
       
   const targetY = selectedIndex1 !== -1 ? -1 : selectedIndex2 !== -1 ? 1 : 0;
@@ -122,15 +124,15 @@ export function BookshelfScene({
           {/* Top Shelf Title */}
           <Text 
             position={[0, 0.6, 0.91]} 
-            fontSize={0.08} 
+            fontSize={0.085} 
             color="#00ffff" 
             anchorX="center" 
             anchorY="middle"
-            letterSpacing={0.2}
+            letterSpacing={0.15}
             outlineWidth={0.005}
             outlineColor="#000000"
           >
-            SIGLO XXI
+            GRUPO 1: TEST-AND-SET (HARDWARE)
           </Text>
 
           {/* Bottom Wooden Shelf Base */}
@@ -141,15 +143,15 @@ export function BookshelfScene({
           {/* Bottom Shelf Title */}
           <Text 
             position={[0, -1.4, 0.91]} 
-            fontSize={0.08} 
-            color="#00ffff" 
+            fontSize={0.085} 
+            color="#00ff88" 
             anchorX="center" 
             anchorY="middle"
-            letterSpacing={0.2}
+            letterSpacing={0.15}
             outlineWidth={0.005}
             outlineColor="#000000"
           >
-            DATOS CURIOSOS
+            GRUPO 2: SEMÁFOROS (SOFTWARE / SO)
           </Text>
 
           {/* Wooden Shelf Back Panel */}
@@ -170,7 +172,7 @@ export function BookshelfScene({
             <meshStandardMaterial color="#2d1c11" roughness={0.7} metalness={0.1} />
           </mesh>
 
-          {/* Shelf 1 Books */}
+          {/* Shelf 1 Books (Hardware) */}
           {shelf1Books.map((book, i) => {
             const isSelected = selectedBookId === book.id;
             return (
@@ -178,7 +180,7 @@ export function BookshelfScene({
                 key={book.id}
                 book={book}
                 index={i}
-                position={[startX1 + i * 0.35, 1.45, 0]}
+                position={[startX1 + i * bookSpacing, 1.45, 0]}
                 isSelected={isSelected}
                 onClick={() => onSelectBook(isSelected ? null : book.id)}
                 isMobile={isMobile}
@@ -186,15 +188,15 @@ export function BookshelfScene({
             );
           })}
 
-          {/* Shelf 2 Books */}
+          {/* Shelf 2 Books (Software / Semaphores) */}
           {shelf2Books.map((book, i) => {
             const isSelected = selectedBookId === book.id;
             return (
               <BookModel
                 key={book.id}
                 book={book}
-                index={i + 27}
-                position={[startX2 + i * 0.35, -0.55, 0]}
+                index={i + shelf1Books.length}
+                position={[startX2 + i * bookSpacing, -0.55, 0]}
                 isSelected={isSelected}
                 onClick={() => onSelectBook(isSelected ? null : book.id)}
                 isMobile={isMobile}

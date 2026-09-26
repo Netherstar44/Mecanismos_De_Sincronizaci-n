@@ -1,6 +1,7 @@
 {
-  "name": "fanzine-ingenieria",
-  "version": "1.0.0",
+  "name": "mecanismos-de-sincronizacion",
+  "version": "2.0.0",
+  "description": "Simulador Técnico 3D y Laboratorio Didáctico de Mecanismos de Sincronización en Sistemas Operativos",
   "private": true,
   "type": "module",
   "scripts": {

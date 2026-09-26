@@ -1,0 +1,202 @@
+================================================================================
+GUÍA COMPLETA DE MECANISMOS DE SINCRONIZACIÓN EN SISTEMAS OPERATIVOS
+================================================================================
+
+--------------------------------------------------------------------------------
+1. GRUPO 1: TEST-AND-SET (MECANISMO A NIVEL DE HARDWARE)
+--------------------------------------------------------------------------------
+
+1.1. CONCEPTO
+Test-and-Set (TSL - Test and Set Lock) es una instrucción de CPU a nivel de hardware diseñada para escribir un valor de bandera (flag) en una posición de memoria y devolver simultáneamente su valor previo. Al realizarse directamente en la arquitectura del procesador o memoria de doble puerto (DPRAM), permite que los hilos y procesos prueben y modifiquen variables de control compartidas de forma atómica.
+
+1.2. OPERACIÓN ATÓMICA
+La característica fundamental de Test-and-Set es la ATOMICIDAD. Una operación es atómica cuando se ejecuta como una unidad indivisible e ininterrumpible. Durante la ejecución de una instrucción Test-and-Set, el hardware asegura que ningún otro proceso, hilo o interrupción pueda intervenir o ver un estado intermedio de la memoria. Si dos procesadores intentan ejecutar Test-and-Set en la misma dirección de memoria de forma simultánea, el bus de hardware o la memoria DPRAM interrumpe o posterga a uno de ellos, garantizando que las lecturas y escrituras se realicen secuencialmente.
+
+1.3. FUNCIONAMIENTO Y PSEUDOCÓDIGO
+Lógicamente, el comportamiento de la instrucción atómica Test-and-Set puede describirse con la siguiente función (ejecutada en hardware en un solo ciclo ininterrumpible):
+
+    boolean TestAndSet(boolean *target) {
+        boolean rv = *target; // Almacena el valor previo
+        *target = true;       // Asigna el nuevo valor (bloqueado)
+        return rv;            // Retorna el valor previo
+    }
+
+Para implementar Exclusión Mutua (Mutex) usando Test-and-Set:
+    - Se define una variable booleana compartida `lock`, inicializada en `false` (desbloqueado).
+    - Cuando un proceso intenta entrar a la Sección Crítica, ejecuta un bucle de espera activa (Spinlock):
+        while (TestAndSet(&lock)) ; // Espera activa mientras retorne true
+    - Una vez que la instrucción retorna `false`, el proceso adquiere el candado y entra a la Sección Crítica.
+    - Al salir de la Sección Crítica, el proceso libera el candado mediante una escritura simple: `lock = false`.
+
+1.4. PROBLEMA QUE RESUELVE
+Resuelve el Problema de la Sección Crítica y previene las Condiciones de Carrera (Race Conditions) en entornos multiprocesador de memoria compartida, garantizando estrictamente la Exclusión Mutua (Mutual Exclusion), de modo que solo un proceso a la vez pueda ejecutar el código que modifica un recurso compartido.
+
+1.5. VENTAJAS Y DESVENTAJAS
+Ventajas:
+  + Simplicidad y soporte directo del hardware (procesadores x86, IBM System/360, SPARC, etc.).
+  + Garantiza exclusión mutua en arquitecturas multiprocesador de memoria compartida.
+  + Bajo costo/latencia cuando no hay contención por el candado.
+  + Mínimo requerimiento de almacenamiento (solo requiere 1 bit o variable booleana).
+
+Desventajas:
+  - Espera Activa (Busy Waiting / Spinlock): Los procesos parados consumen ciclos inútiles de CPU y tráfico constante en el bus de datos en intentos fallidos repetidos.
+  - Inanición (Starvation) y Falta de Espera Acotada (Bounded Waiting): No mantiene una cola estricta de orden de llegada (FIFO), por lo que un proceso puede quedar esperando indefinidamente si otros toman el candado.
+  - Inversión de Prioridades: Un proceso de alta prioridad puede quedar bloqueado en espera activa consumiendo tiempo de CPU mientras un proceso de baja prioridad retiene el candado.
+
+
+--------------------------------------------------------------------------------
+2. GRUPO 2: SEMÁFOROS (MECANISMO A NIVEL DE SOFTWARE / SISTEMA OPERATIVO)
+--------------------------------------------------------------------------------
+
+2.1. CONCEPTO
+Un Semáforo es una variable entera compartida y un tipo de dato abstracto introducido históricamente por Edsger Dijkstra. Sirve como primitiva de sincronización para controlar y coordinar el acceso concurrente a recursos compartidos sin depender necesariamente de la espera activa.
+
+2.2. PROBLEMA QUE RESUELVE
+Soluciona la sincronización compleja entre múltiples procesos, el control de acceso a recursos con múltiples instancias disponibles, y elimina el desperdicio de tiempo de procesador reemplazando el spinlock por suspensión de procesos (bloqueo/despertar: sleep and wakeup). Además, resuelve problemas clásicos de IPC como Productor-Consumidor, Lectores-Escritores y Filósofos Comensales.
+
+2.3. TIPOS DE SEMÁFOROS
+1. Semáforo Binario (Binary Semaphore / Mutex Lock):
+   - Solo puede tomar los valores 0 o 1.
+   - Su valor inicial es 1.
+   - Se utiliza para exclusión mutua directa en una única instancia de recurso compartido.
+
+2. Semáforo Contador (Counting Semaphore):
+   - Su valor puede ser cualquier entero no negativo (0, 1, 2, ..., N).
+   - Su valor inicial representa la cantidad total de instancias de un recurso disponibles.
+   - Se decrementa cuando un proceso solicita un recurso y se incrementa cuando un recurso es liberado.
+
+2.4. OPERACIONES ATÓMICAS: wait() Y signal()
+Las dos operaciones fundamentales sobre un semáforo S son indivisibles (atómicas) y no pueden interrumpirse:
+
+- Operación wait(S) (también conocida como P(S) del holandés 'proberen' / probar):
+  Lógica conceptual:
+      wait(S) {
+          S.value--;
+          if (S.value < 0) {
+              // Añadir proceso a la cola de espera S.queue
+              // Bloquear/suspender el proceso (sleep)
+          }
+      }
+
+- Operación signal(S) (también conocida como V(S) del holandés 'verhogen' / incrementar):
+  Lógica conceptual:
+      signal(S) {
+          S.value++;
+          if (S.value <= 0) {
+              // Remover un proceso P de la cola S.queue
+              // Despertar el proceso P (wakeup)
+          }
+      }
+
+2.5. VENTAJAS Y DESVENTAJAS
+Ventajas:
+  + Sin espera activa en CPU: Los procesos que no pueden acceder se suspenden (bloquean) y no consumen ciclos de procesador.
+  + Versatilidad y Flexibilidad: Permite tanto exclusión mutua como sincronización condicional de secuencias y gestión de pools de recursos.
+  + Independencia de la plataforma: Se implementan dentro del código del microkernel del SO.
+
+Desventajas:
+  - Complejidad y propensión a errores: Un orden incorrecto en las llamadas a wait() y signal() puede causar Deadlocks (interbloqueos) o violar la exclusión mutua.
+  - Pérdida de modularidad: Causa acoplamiento en el diseño de programas grandes al dispersar llamadas por todo el código.
+  - Riesgo de Inversión de Prioridades y Deadlock.
+
+
+--------------------------------------------------------------------------------
+3. SECCIÓN ESPECIAL PARA CLASES: EJEMPLOS PRÁCTICOS Y DIDÁCTICOS
+--------------------------------------------------------------------------------
+
+3.1. EJEMPLO DIDÁCTICO PARA TEST-AND-SET: "EL BAÑO DE UNA TIENDA Y LA CERRADURA DIGITAL"
+
+- Analogía:
+  Imagine el baño individual de una cafetería con una cerradura digital electrónica.
+  * La variable `lock` representa la cerradura (false = libre, true = ocupado).
+  * La instrucción `TestAndSet` es la acción física de girar el pestillo: en un solo movimiento instantáneo, la persona lee si la puerta estaba abierta y simultáneamente le pasa el seguro.
+  * Cuando un cliente (Proceso A) llega y el baño está libre (`lock = false`), ejecuta `TestAndSet`. La cerradura retorna `false` (estaba libre) e inmediatamente pasa a `true` (ahora ocupado). El cliente entra al baño.
+  * Si un cliente (Proceso B) llega mientras A está adentro, ejecuta `TestAndSet`. La cerradura retorna `true` (ya estaba ocupado) y se mantiene en `true`. El Proceso B no puede entrar y se queda intentando continuamente girar el pomo (Espera Activa / Spinlock).
+  * Cuando el Proceso A sale, simplemente abre la puerta desde adentro (`lock = false`).
+  * En el siguiente intento del Proceso B, `TestAndSet` retornará `false` y B podrá ingresar.
+
+- Traza de ejecución paso a paso (para pizarra):
+  1. Estado Inicial: lock = false.
+  2. Proceso P1 ejecuta: while(TestAndSet(&lock)).
+     - Retorna false. lock cambia a true. P1 ingresa a Sección Crítica.
+  3. Proceso P2 ejecuta: while(TestAndSet(&lock)).
+     - Retorna true. lock sigue en true. P2 queda atrapado en el bucle.
+  4. P1 finaliza Sección Crítica y ejecuta: lock = false.
+  5. En la siguiente iteración del bucle de P2, TestAndSet(&lock) retorna false. lock cambia a true. P2 entra a Sección Crítica.
+
+3.2. EJEMPLO DIDÁCTICO PARA SEMÁFOROS: "EL ESTACIONAMIENTO CON PANTALLA CONTADORA"
+
+- Analogía:
+  Imagine un estacionamiento que tiene capacidad para N=3 vehículos.
+  * Se utiliza un Semáforo Contador inicializado en S = 3.
+  * La operación `wait(S)` representa el ticket de entrada a la barrera.
+  * La operación `signal(S)` representa el pago/salida en la barrera de egreso.
+
+- Traza de ejecución paso a paso (para clase):
+  * Estado inicial: S = 3.
+  * Llega Auto 1: Ejecuta wait(S) -> S disminuye a 2. Ingresa (S >= 0).
+  * Llega Auto 2: Ejecuta wait(S) -> S disminuye a 1. Ingresa (S >= 0).
+  * Llega Auto 3: Ejecuta wait(S) -> S disminuye a 0. Ingresa (S >= 0). El estacionamiento está Lleno.
+  * Llega Auto 4: Ejecuta wait(S) -> S disminuye a -1. Como S < 0, la barrera no se levanta; Auto 4 se apaga y entra en la cola de espera (Estado Bloqueado / Sleep).
+  * Sale Auto 1: Ejecuta signal(S) -> S se incrementa a 0. Como S <= 0, el sistema despierta al primer auto de la cola (Auto 4).
+  * Auto 4 se enciende (pasa a listo) e ingresa al estacionamiento.
+
+3.3. EJEMPLO EN CÓDIGO: PROBLEMA DEL PRODUCTOR-CONSUMIDOR CON BÚFER LIMITADO
+
+    // Variables globales
+    #define N 5 // Capacidad del búfer
+    semaphore mutex = 1; // Semáforo binario para exclusión mutua en el búfer
+    semaphore empty = N; // Semáforo contador para espacios vacíos disponibles
+    semaphore full  = 0; // Semáforo contador para elementos listos para consumir
+
+    void Productor() {
+        while (1) {
+            int item = producir_item();
+            wait(empty); // Espera si no hay espacios vacíos (empty <= 0)
+            wait(mutex); // Garantiza acceso exclusivo al búfer
+            
+            insertar_item_en_bufer(item);
+            
+            signal(mutex); // Libera el acceso al búfer
+            signal(full);  // Incrementa la cantidad de elementos disponibles
+        }
+    }
+
+    void Consumidor() {
+        while (1) {
+            wait(full);  // Espera si el búfer está vacío (full <= 0)
+            wait(mutex); // Garantiza acceso exclusivo al búfer
+            
+            int item = remover_item_del_bufer();
+            
+            signal(mutex); // Libera el acceso al búfer
+            signal(empty); // Incrementa la cantidad de espacios libres
+            
+            consumir_item(item);
+        }
+    }
+
+
+--------------------------------------------------------------------------------
+4. ANEXO DE CITAS Y REFERENCIAS BIBLIOGRÁFICAS
+--------------------------------------------------------------------------------
+
+CITAS CITABLES EN TEXTO:
+[1] Dijkstra, E. W. (1965). "Cooperating Sequential Processes". Technological University, Eindhoven. (Origen de los semáforos y las operaciones P y V).
+[2] Silberschatz, A., Galvin, P. B., & Gagne, G. (2018). "Operating System Concepts" (10th ed.). Wiley. (Mecanismos de sincronización, Test-and-Set y Semáforos).
+[3] Rinard, M. C. (1998). "Operating Systems Lecture Notes: Lecture 5 - Implementing Synchronization Operations". MIT Laboratory for Computer Science.
+[4] GeeksforGeeks (2025). "Hardware Synchronization Algorithms: Unlock and Lock, Test and Set, Swap".
+[5] Wikipedia (2026). "Test-and-set instruction & Mutual Exclusion using Spinlocks".
+[6] BYJU'S Exam Prep / GATE Notes (2023). "Semaphores in Operating System: Binary and Counting Semaphores".
+[7] TutorialsPoint (2026). "Semaphores in Operating System and Producer-Consumer Implementation".
+
+REFERENCIAS BIBLIOGRÁFICAS FORMATO APA 7MA EDICIÓN:
+
+1. BYJU'S CS. (2023). Semaphores in Operating System. BYJU'S GATE Notes. https://byjus.com/gate/semaphores-in-operating-system-notes/
+2. Dijkstra, E. W. (1965). Cooperating sequential processes (Technical Report EWD-123). Technological University Eindhoven.
+3. GeeksforGeeks. (2025, July 23). Hardware Synchronization Algorithms: Unlock and Lock, Test and Set, Swap. GeeksforGeeks CS Corner. https://www.geeksforgeeks.org/operating-systems/hardware-synchronization-algorithms-unlock-and-lock-test-and-set-swap/
+4. Rinard, M. C. (1998). Operating Systems Lecture Notes: Lecture 5 - Implementing Synchronization Operations. MIT Laboratory for Computer Science (CSAIL). https://people.csail.mit.edu/rinard/teaching/osnotes/h5.html
+5. Silberschatz, A., Galvin, P. B., & Gagne, G. (2018). Operating System Concepts (10th ed.). John Wiley & Sons.
+6. TutorialsPoint. (2026, March 17). Semaphores in Operating System. TutorialsPoint Computer Science Articles. https://www.tutorialspoint.com/article/semaphores-in-operating-system
+7. Wikipedia. (2026, September 8). Test-and-set. Wikimedia Foundation. https://en.wikipedia.org/wiki/Test-and-set
+================================================================================

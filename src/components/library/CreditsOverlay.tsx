@@ -55,95 +55,97 @@ export function CreditsOverlay({
                 <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
                   &lt; ARQUITECTOS DE LA SIMULACIÓN /&gt;
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-white">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
                   <div className="bg-[#030811] p-6 border border-white/10 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-[#00ffff]" />
-                    <h4 className="font-sans text-xl font-bold mb-2">Jose David Correa</h4>
-                    <p className="font-mono text-xs text-white/50">INGENIERÍA Y DISEÑO</p>
+                    <h4 className="font-sans text-lg font-bold mb-2">Jose Correa</h4>
+                    <p className="font-mono text-xs text-white/50">DESARROLLO & ARQUITECTURA</p>
                   </div>
                   <div className="bg-[#030811] p-6 border border-white/10 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-[#00ffff]" />
-                    <h4 className="font-sans text-xl font-bold mb-2">Simon Santiago Puentes</h4>
-                    <p className="font-mono text-xs text-white/50">INGENIERÍA Y DISEÑO</p>
+                    <div className="absolute top-0 left-0 w-1 h-full bg-[#00ff88]" />
+                    <h4 className="font-sans text-lg font-bold mb-2">Carlos Rincon</h4>
+                    <p className="font-mono text-xs text-white/50">DESARROLLO & ARQUITECTURA</p>
+                  </div>
+                  <div className="bg-[#030811] p-6 border border-white/10 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-[#38bdf8]" />
+                    <h4 className="font-sans text-lg font-bold mb-2">Sebastian Charry</h4>
+                    <p className="font-mono text-xs text-white/50">DESARROLLO & ARQUITECTURA</p>
                   </div>
                 </div>
               </section>
 
-              {/* Bibliografía */}
+              {/* Bibliografía Oficial APA 7ma Edición */}
               <section>
                 <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
-                  &lt; BASES DE DATOS EXTERNAS /&gt;
+                  &lt; BASES DE DATOS Y REFERENCIAS BIBLIOGRÁFICAS (FORMATO APA 7MA EDICIÓN) /&gt;
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-serif text-sm text-white/80">
                   <BibliographyEntry
                     num="01"
-                    text='Vallejo, A. (2026). La gran pega al coche eléctrico es que tarda mucho en cargarse. CATL tiene una solución. Xataka.'
-                    href="https://www.xataka.com/movilidad/catl-quiere-acabar-vez-todas-mayor-problema-coche-electrico-bateria-que-carga-seis-minutos"
+                    text='BYJU&apos;S CS. (2023). Semaphores in Operating System. BYJU&apos;S GATE Notes.'
+                    href="https://byjus.com/gate/semaphores-in-operating-system-notes/"
                   />
                   <BibliographyEntry
                     num="02"
-                    text='Birkby, J. & Soto-Vélez, G. (2025). Agricultura vertical. ATTRA.'
-                    href="https://attra.ncat.org/es/publication/agricultura-vertical/"
+                    text='Dijkstra, E. W. (1965). Cooperating sequential processes (Technical Report EWD-123). Technological University Eindhoven.'
+                    href="https://www.cs.utexas.edu/~EWD/transcriptions/EWD01xx/EWD123.html"
                   />
                   <BibliographyEntry
                     num="03"
-                    text='Cloudflare. (2023). What is the cloud? | Definition of cloud.'
-                    href="https://www.cloudflare.com/es-es/learning/cloud/what-is-the-cloud/"
+                    text='GeeksforGeeks. (2025, July 23). Hardware Synchronization Algorithms: Unlock and Lock, Test and Set, Swap. GeeksforGeeks CS Corner.'
+                    href="https://www.geeksforgeeks.org/operating-systems/hardware-synchronization-algorithms-unlock-and-lock-test-and-set-swap/"
                   />
                   <BibliographyEntry
                     num="04"
-                    text='Eufic. (2023). Carne cultivada en laboratorio: cómo se elabora y pros/contras.'
-                    href="https://www.eufic.org/es/produccion-de-alimentos/articulo/carne-cultivada-en-laboratorio-como-se-elabora-y-cuales-son-sus-pros-y-sus-contras/"
+                    text='Rinard, M. C. (1998). Operating Systems Lecture Notes: Lecture 5 - Implementing Synchronization Operations. MIT Laboratory for Computer Science (CSAIL).'
+                    href="https://people.csail.mit.edu/rinard/teaching/osnotes/h5.html"
                   />
                   <BibliographyEntry
                     num="05"
-                    text='Fernández, Y. (2020). Qué es el 5G y qué diferencias tiene con el 4G. Xataka.'
-                    href="https://www.xataka.com/basics/que-5g-que-diferencias-tiene-4g"
+                    text='Silberschatz, A., Galvin, P. B., & Gagne, G. (2018). Operating System Concepts (10th ed.). John Wiley & Sons.'
+                    href="https://www.wiley.com/en-us/Operating+System+Concepts%2C+10th+Edition-p-9781119320913"
                   />
                   <BibliographyEntry
                     num="06"
-                    text='Grapheano medical care. (2024). Grafeno en medicina.'
-                    href="https://graphenanomedicalcare.com/grafeno-en-medicina/"
+                    text='TutorialsPoint. (2026, March 17). Semaphores in Operating System. TutorialsPoint Computer Science Articles.'
+                    href="https://www.tutorialspoint.com/article/semaphores-in-operating-system"
                   />
                   <BibliographyEntry
                     num="07"
-                    text='Infante-López, D. et al. (2022). CRISPR-Cas9: el debate bioético. Persona y bioética, 25(2).'
-                    href="https://doi.org/10.5294/pebi.2021.25.2.9"
+                    text='Wikipedia. (2026, September 8). Test-and-set. Wikimedia Foundation.'
+                    href="https://en.wikipedia.org/wiki/Test-and-set"
                   />
-                  <BibliographyEntry
-                    num="08"
-                    text='National Aeronautics and Space Administration. (2026). Mission: Artemis II.'
-                    href="https://www.nasa.gov/mission/artemis-ii/"
-                  />
-                  <BibliographyEntry
-                    num="09"
-                    text='McMahon, L. & Tidy, J. (2026). Mythos, el nuevo modelo de IA de Anthropic. BBC.'
-                    href="https://www.bbc.com/mundo/articles/cr71x5vgr9go"
-                  />
-                  <BibliographyEntry
-                    num="10"
-                    text='Veritasium. (2021). The weight of internet. YouTube.'
-                  />
-                  <BibliographyEntry
-                    num="11"
-                    text='NASA. (2011). Astronomers Find Largest, Most Distant Reservoir of Water.'
-                    href="https://www.nasa.gov/topics/universe/features/universe20110722.html"
-                  />
-                  <BibliographyEntry
-                    num="12"
-                    text='EPA. (2022). Natural Radioactivity in Food.'
-                    href="https://www.epa.gov/radtown/natural-radioactivity-food"
-                  />
-                  <BibliographyEntry
-                    num="13"
-                    text='Godfrey-Smith, P. (2016). Other Minds: The Octopus, the Sea, and the Deep Origins of Consciousness.'
-                  />
-                  <BibliographyEntry
-                    num="14"
-                    text='Nature. (2014). DNA packaging: Nucleosomes and Chromatin.'
-                    href="https://www.nature.com/scitable/topicpage/dna-packaging-nucleosomes-and-chromatin-710/"
-                  />
+                </div>
+              </section>
+
+              {/* Guía de Citas en Texto */}
+              <section>
+                <h3 className="font-mono text-sm text-[#00ff88] border-b border-[#00ff88]/20 pb-2 mb-6">
+                  &lt; ÍNDICE DE CITAS EN TEXTO /&gt;
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs text-white/70">
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[1]</span> Dijkstra, E. W. (1965) — Origen de semáforos y operaciones P y V.
+                  </div>
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[2]</span> Silberschatz et al. (2018) — Mecanismos de sincronización, TSL y Semáforos.
+                  </div>
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[3]</span> Rinard, M. C. (MIT 1998) — Operaciones de sincronización a nivel hardware/software.
+                  </div>
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[4]</span> GeeksforGeeks (2025) — Algoritmos de sincronización de hardware.
+                  </div>
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[5]</span> Wikipedia (2026) — Instrucción Test-and-Set y exclusión con Spinlocks.
+                  </div>
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[6]</span> BYJU&apos;S (2023) — Semáforos binarios y contadores en SO.
+                  </div>
+                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
+                    <span className="text-[#00ffff] font-bold">[7]</span> TutorialsPoint (2026) — Implementación Productor-Consumidor.
+                  </div>
                 </div>
               </section>
 
@@ -153,26 +155,26 @@ export function CreditsOverlay({
                   &lt; DEPENDENCIAS DEL SISTEMA /&gt;
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-serif text-sm text-white/80">
-                  <BibliographyEntry num="T1" text="Three.js — Biblioteca JavaScript para gráficos 3D con WebGL." href="https://threejs.org/docs/" />
-                  <BibliographyEntry num="T2" text="React Three Fiber — Renderizador de React para Three.js." href="https://r3f.docs.pmnd.rs/" />
-                  <BibliographyEntry num="T3" text="React — Biblioteca para interfaces de usuario." href="https://react.dev/" />
-                  <BibliographyEntry num="T4" text="Framer Motion — Biblioteca de animaciones para React." href="https://motion.dev/" />
+                  <BibliographyEntry num="T1" text="Three.js — Biblioteca JavaScript para gráficos 3D acelerados por GPU." href="https://threejs.org/docs/" />
+                  <BibliographyEntry num="T2" text="React Three Fiber — Renderizador declarativo de React para Three.js." href="https://r3f.docs.pmnd.rs/" />
+                  <BibliographyEntry num="T3" text="React 19 — Biblioteca central para interfaces de usuario reactivas." href="https://react.dev/" />
+                  <BibliographyEntry num="T4" text="Cloudflare Pages — Plataforma de ejecución y despliegue edge global." href="https://pages.cloudflare.com/" />
                 </div>
               </section>
 
               {/* Open Source */}
               <section>
                 <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
-                  &lt; CÓDIGO ABIERTO /&gt;
+                  &lt; REPOSITORIO CENTRAL GITHUB /&gt;
                 </h3>
                 <div className="font-sans text-base text-white/80 p-6 bg-[#030811] border border-white/10 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#00ffff]" />
-                  Este proyecto será Open Source, si quieren entender el código se los dejo <a href="https://github.com/Netherstar44/SIGLO_XXI/" target="_blank" rel="noopener noreferrer" className="text-[#00ffff] hover:text-white hover:underline transition-colors font-bold">aquí</a>.
+                  Código fuente y arquitectura del simulador disponible en GitHub: <a href="https://github.com/Netherstar44/Mecanismos_De_Sincronizaci-n" target="_blank" rel="noopener noreferrer" className="text-[#00ffff] hover:text-white hover:underline transition-colors font-bold">Netherstar44/Mecanismos_De_Sincronizaci-n</a>.
                 </div>
               </section>
 
               <div className="pt-8 border-t border-white/10 font-mono text-xs text-white/40 flex justify-between">
-                <span>EDICIÓN CERO // SIGLO XXI</span>
+                <span>LABORATORIO DE SISTEMAS OPERATIVOS // V2.0</span>
                 <span>FIN DEL REGISTRO</span>
               </div>
             </div>
