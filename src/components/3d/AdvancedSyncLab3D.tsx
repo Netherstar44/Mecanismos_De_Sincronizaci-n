@@ -1,215 +1,397 @@
-import { useRef, useState, Suspense, useEffect } from "react";
+import { useRef, useState, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Text, RoundedBox, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { X, Cpu, Activity, Play, Pause, RotateCcw, AlertTriangle, ShieldCheck } from "lucide-react";
+import { X, Cpu, Play, Pause, RotateCcw, AlertTriangle, ShieldCheck, Zap, ArrowRight, CheckCircle2, HelpCircle } from "lucide-react";
+import { ExplanationButton } from "@/components/ui/ExplanationButton";
 
 /**
- * AdvancedSyncLab3D — Simulador Técnico Avanzado 3D de Sistemas Operativos
+ * AdvancedSyncLab3D — Laboratorio Técnico Didáctico e Intuitivo
  * 
- * Plataforma Técnica Dual:
- * - Plano Inferior: Arquitectura de Silicio / Hardware (Buses, DPRAM, Señal LOCK#, 4 Cores CPU).
- * - Plano Superior: Microkernel del Sistema Operativo (Planificador de Hilos, Semáforos, Sleep Queue).
+ * Enfoque educativo:
+ * Compara visualmente los dos mundos de la sincronización en Sistemas Operativos:
+ * 1. Nivel Hardware (TSL): Los hilos no admitidos quedan quemando CPU en bucle (Espera Activa / Spinlock).
+ * 2. Nivel Sistema Operativo (Semáforos): Los hilos no admitidos son dormidos por el Kernel (Sleep), ahorrando CPU.
+ * 3. Interbloqueo (Deadlock): Bloqueo mutuo circular entre recursos con grafos visuales.
  */
 export function AdvancedSyncLab3D({ onClose }: { onClose: () => void }) {
   const [mechanism, setMechanism] = useState<"tsl" | "semaphore" | "deadlock">("tsl");
   const [threadCount, setThreadCount] = useState(4);
   const [isRunning, setIsRunning] = useState(true);
-  const [wastedCycles, setWastedCycles] = useState(1420);
-  const [savedCycles, setSavedCycles] = useState(8940);
-  const [activeThreadInCS, setActiveThreadInCS] = useState<number | null>(0);
-  const [sleepingThreads, setSleepingThreads] = useState<number[]>([1, 2, 3]);
-  const [semaphoreValue, setSemaphoreValue] = useState(0);
+  const [activeThread, setActiveThread] = useState<number | null>(0);
+  const [wastedCycles, setWastedCycles] = useState(1280);
+  const [savedCycles, setSavedCycles] = useState(6450);
+  const [semaphoreS, setSemaphoreS] = useState(1);
+  const [deadlockBroken, setDeadlockBroken] = useState(false);
+  const [statusMessage, setStatusMessage] = useState(
+    "Core 0 ejecuta Sección Crítica con la señal LOCK# activa. Los Cores 1, 2 y 3 queman ciclos en spinlock."
+  );
 
-  // Callback para actualizar telemetría desde el Canvas (cada frame)
+  // Callback de animación por cuadro para acumular ciclos
   const onFrameTick = (delta: number) => {
     if (!isRunning) return;
     if (mechanism === "tsl") {
-      setWastedCycles(prev => prev + Math.floor(delta * 60 * (threadCount - 1)));
+      setWastedCycles(prev => prev + Math.floor(delta * 40 * (threadCount - 1)));
     } else if (mechanism === "semaphore") {
-      setSavedCycles(prev => prev + Math.floor(delta * 80 * threadCount));
+      setSavedCycles(prev => prev + Math.floor(delta * 60 * threadCount));
     }
   };
 
-  const handleStepAction = () => {
-    if (mechanism === "tsl") {
-      const nextThread = activeThreadInCS !== null ? (activeThreadInCS + 1) % threadCount : 0;
-      setActiveThreadInCS(nextThread);
-    } else if (mechanism === "semaphore") {
-      if (semaphoreValue > 0) {
-        setSemaphoreValue(prev => prev - 1);
-      } else {
-        setSemaphoreValue(3);
-        setSleepingThreads([1, 2]);
-      }
+  // Acciones específicas para TSL
+  const handleTSLReleaseLock = () => {
+    setActiveThread(null);
+    setStatusMessage("lock = 0: Core actual liberó el candado. El bus de hardware queda disponible para el siguiente intento atómico.");
+  };
+
+  const handleTSLAcquireNext = () => {
+    const next = activeThread === null ? 0 : (activeThread + 1) % threadCount;
+    setActiveThread(next);
+    setStatusMessage(`Core ${next} ejecutó atómicamente TSL(&lock): Retornó 0, fijó lock = 1 y activó la línea LOCK# del bus. Entra a Sección Crítica.`);
+  };
+
+  // Acciones específicas para Semáforos
+  const handleSemaphoreWait = () => {
+    const newS = semaphoreS - 1;
+    setSemaphoreS(newS);
+    if (newS >= 0) {
+      setStatusMessage(`wait(S): S decrece a ${newS} (>= 0). Se concede acceso a la sección crítica sin suspender ningún hilo.`);
+    } else {
+      setStatusMessage(`wait(S): S decrece a ${newS} (< 0). El Kernel retira el proceso de la CPU y lo suspende en S.queue [Sleep], ahorrando 100% de CPU.`);
     }
+  };
+
+  const handleSemaphoreSignal = () => {
+    const newS = semaphoreS + 1;
+    setSemaphoreS(newS);
+    if (newS <= 0) {
+      setStatusMessage(`signal(S): S sube a ${newS} (<= 0). Había hilos suspendidos; el Kernel ejecuta wakeup() en el primer hilo de la cola y lo reanuda.`);
+    } else {
+      setStatusMessage(`signal(S): S sube a ${newS}. Recurso liberado y disponible en el pool general.`);
+    }
+  };
+
+  // Acciones específicas para Deadlock
+  const handleTriggerDeadlock = () => {
+    setDeadlockBroken(false);
+    setActiveThread(null);
+    setStatusMessage("Deadlock Activo: Core 0 retiene R1 y espera R2. Core 1 retiene R2 y espera R1. Ninguno puede avanzar (Espera Circular de Coffman).");
+  };
+
+  const handleBreakDeadlock = () => {
+    setDeadlockBroken(true);
+    setStatusMessage("Deadlock Roto: El Sistema Operativo aplicó Desalojo Forzado (Preemption) de R2 sobre Core 1, permitiendo a Core 0 finalizar su ejecución.");
   };
 
   const handleReset = () => {
     setWastedCycles(0);
     setSavedCycles(0);
-    setActiveThreadInCS(0);
-    setSemaphoreValue(mechanism === "semaphore" ? 2 : 0);
+    setActiveThread(0);
+    setSemaphoreS(1);
+    setDeadlockBroken(false);
+    setStatusMessage("Simulación reiniciada al estado de fábrica.");
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#03060c]/95 flex flex-col font-mono text-white select-none">
-      {/* Barra de Herramientas Superior del Laboratorio */}
-      <header className="h-16 border-b border-[#00ffff]/20 px-6 flex items-center justify-between bg-black/60 backdrop-blur-md z-20">
+    <div className="fixed inset-0 z-50 bg-slate-950/95 flex flex-col font-sans text-slate-100 select-none backdrop-blur-xl">
+      {/* ========================================================================= */}
+      {/* CABECERA ELEGANTE (Limpia, con tipografía humana y no genérica)            */}
+      {/* ========================================================================= */}
+      <header className="h-16 border-b border-slate-800 px-6 flex items-center justify-between bg-slate-900/80 z-20">
         <div className="flex items-center gap-3">
-          <Cpu className="w-6 h-6 text-[#00ffff] animate-pulse" />
+          <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+            <Cpu className="w-5 h-5" />
+          </div>
           <div>
-            <h1 className="font-bold text-sm md:text-base tracking-wider text-white">
-              LABORATORIO TÉCNICO // HARDWARE BUS & KERNEL SYNC SANDBOX
+            <h1 className="font-bold text-sm md:text-base text-white tracking-tight">
+              Laboratorio Técnico de Arquitectura & Concurrencia
             </h1>
-            <p className="text-[10px] text-[#00ffff]/70">
-              SIMULADOR DE ALTO RENDIMIENTO // DOUBLE-LAYER CO-DESIGN ARCHITECTURE
+            <p className="text-xs text-slate-400">
+              Instrucción Hardware Atómica (TSL) vs. Control por Kernel (Semáforos de Dijkstra)
             </p>
           </div>
         </div>
 
-        {/* Selector de Mecanismo de Sincronización */}
-        <div className="hidden md:flex items-center gap-2 bg-[#09101f] p-1 rounded-lg border border-[#00ffff]/30">
+        {/* Pestañas de Selección con diseño moderno */}
+        <div className="hidden md:flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
           <button
-            onClick={() => { setMechanism("tsl"); setSleepingThreads([]); setActiveThreadInCS(0); }}
-            className={`px-3 py-1 text-xs rounded transition-colors cursor-pointer ${mechanism === "tsl" ? "bg-[#00ffff] text-black font-bold" : "text-white/70 hover:text-white"}`}
+            onClick={() => { setMechanism("tsl"); setActiveThread(0); setStatusMessage("Modo TSL seleccionado: Inspección de espera activa a nivel microarquitectura."); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              mechanism === "tsl"
+                ? "bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
           >
-            Test-and-Set Lock (Hardware)
+            <Zap className="w-3.5 h-3.5" />
+            <span>Test-and-Set (TSL)</span>
           </button>
+
           <button
-            onClick={() => { setMechanism("semaphore"); setSemaphoreValue(2); setSleepingThreads([2, 3]); }}
-            className={`px-3 py-1 text-xs rounded transition-colors cursor-pointer ${mechanism === "semaphore" ? "bg-[#00ff88] text-black font-bold" : "text-white/70 hover:text-white"}`}
+            onClick={() => { setMechanism("semaphore"); setSemaphoreS(1); setStatusMessage("Modo Semáforos seleccionado: Inspección de primitivas del Kernel y colas Sleep/Wakeup."); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              mechanism === "semaphore"
+                ? "bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
           >
-            Semáforos (Kernel / Sleep)
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Semáforos (Kernel Sleep)</span>
           </button>
+
           <button
-            onClick={() => { setMechanism("deadlock"); setActiveThreadInCS(null); setSleepingThreads([0, 1, 2, 3]); }}
-            className={`px-3 py-1 text-xs rounded transition-colors cursor-pointer ${mechanism === "deadlock" ? "bg-[#ff2d2d] text-white font-bold" : "text-white/70 hover:text-white"}`}
+            onClick={() => { setMechanism("deadlock"); handleTriggerDeadlock(); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              mechanism === "deadlock"
+                ? "bg-rose-500 text-white font-bold shadow-md shadow-rose-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
           >
-            Interbloqueo (Deadlock)
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>Interbloqueo (Deadlock)</span>
           </button>
         </div>
 
-        {/* Botón de Cierre */}
+        {/* Botón Cerrar */}
         <button
           onClick={onClose}
-          className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors border border-white/20 cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
       </header>
 
-      {/* Área Principal de Renderizado 3D y Telemetría */}
+      {/* ========================================================================= */}
+      {/* CUERPO PRINCIPAL (Canvas 3D + Paneles Explicativos)                        */}
+      {/* ========================================================================= */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
-        {/* Controles y Telemetría Lateral Izquierda */}
-        <aside className="absolute top-4 left-4 z-10 w-72 bg-[#050b14]/90 backdrop-blur-xl border border-[#00ffff]/30 rounded-xl p-4 shadow-[0_0_30px_rgba(0,0,0,0.8)] space-y-4">
-          <div className="border-b border-[#00ffff]/20 pb-2">
-            <h2 className="text-xs font-bold text-[#00ffff] uppercase tracking-wider flex items-center gap-2">
-              <Activity className="w-4 h-4" /> Telemetría en Vivo
+        {/* Panel Didáctico Lateral Izquierdo */}
+        <aside className="absolute top-4 left-4 z-10 w-80 md:w-96 bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Mecanismo Activo
+              </span>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                mechanism === "tsl" ? "bg-amber-500/20 text-amber-400" : (mechanism === "semaphore" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400")
+              }`}>
+                {mechanism === "tsl" ? "Nivel Hardware" : (mechanism === "semaphore" ? "Nivel Software/Kernel" : "Fallo Crítico")}
+              </span>
+            </div>
+            <h2 className="text-base font-bold text-white">
+              {mechanism === "tsl" && "Instrucción Atómica TSL (Hardware)"}
+              {mechanism === "semaphore" && "Semáforo Contador con Suspensión"}
+              {mechanism === "deadlock" && "Grafo de Espera Circular (Coffman)"}
             </h2>
           </div>
 
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-white/60">Hilos Concurrentes:</span>
-              <span className="text-[#00ffff] font-bold">{threadCount}</span>
-            </div>
-            <input
-              type="range"
-              min="2"
-              max="8"
-              value={threadCount}
-              onChange={(e) => setThreadCount(parseInt(e.target.value))}
-              className="w-full accent-[#00ffff] h-1.5 bg-white/10 rounded-full appearance-none"
-            />
-
-            <div className="pt-2 border-t border-white/10 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-white/60">En Sección Crítica:</span>
-                <span className="text-emerald-400 font-bold">{activeThreadInCS !== null ? `Hilo #${activeThreadInCS}` : "Ninguno"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/60">Hilos en Cola / Spinlock:</span>
-                <span className="text-amber-400 font-bold">{threadCount - (activeThreadInCS !== null ? 1 : 0)}</span>
-              </div>
-
-              {mechanism === "tsl" && (
-                <div className="bg-red-500/10 p-2 rounded border border-red-500/30 text-[11px] text-red-300">
-                  <div className="flex items-center gap-1.5 font-bold mb-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Espera Activa (Spinlock)
-                  </div>
-                  <p>Ciclos de CPU y bus gastados:</p>
-                  <p className="text-base font-bold text-red-400 font-mono">{wastedCycles.toLocaleString()} ops</p>
-                </div>
-              )}
-
-              {mechanism === "semaphore" && (
-                <div className="bg-emerald-500/10 p-2 rounded border border-emerald-500/30 text-[11px] text-emerald-300">
-                  <div className="flex items-center gap-1.5 font-bold mb-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Suspensión de Procesos
-                  </div>
-                  <p>Ciclos de CPU ahorrados (Sleep):</p>
-                  <p className="text-base font-bold text-emerald-400 font-mono">+{savedCycles.toLocaleString()} ops</p>
-                </div>
-              )}
-
-              {mechanism === "deadlock" && (
-                <div className="bg-red-600/15 p-2 rounded border border-red-600/40 text-[11px] text-red-200">
-                  <div className="flex items-center gap-1.5 font-bold mb-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> ⚠ DEADLOCK DETECTADO
-                  </div>
-                  <p>Todos los hilos están bloqueados esperando un recurso circular. Ningún progreso posible.</p>
-                </div>
-              )}
-            </div>
+          {/* Explicación didáctica clara y humana */}
+          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 text-xs leading-relaxed text-slate-300 space-y-2">
+            <span className="font-semibold text-blue-400 block mb-0.5">Bitácora de Eventos:</span>
+            <p className="text-slate-200">{statusMessage}</p>
           </div>
 
-          {/* Botones de Control de la Simulación */}
-          <div className="pt-2 border-t border-white/10 flex gap-2">
-            <button
-              onClick={() => setIsRunning(!isRunning)}
-              className="flex-1 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-xs flex items-center justify-center gap-1 font-bold cursor-pointer"
-            >
-              {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              {isRunning ? "Pausar" : "Reanudar"}
-            </button>
-            <button
-              onClick={handleStepAction}
-              className="flex-1 py-1.5 bg-[#00ffff]/20 hover:bg-[#00ffff]/30 border border-[#00ffff]/40 rounded text-xs text-[#00ffff] font-bold cursor-pointer"
-            >
-              Paso
-            </button>
-            <button
-              onClick={handleReset}
-              className="p-1.5 bg-white/10 hover:bg-white/20 rounded text-white cursor-pointer"
-              title="Reiniciar"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+          {/* Métrica de Telemetría Comparativa */}
+          <div className="space-y-2 pt-2 border-t border-slate-800 text-xs">
+            <div className="flex justify-between items-center text-slate-400">
+              <span>Hilos en ejecución:</span>
+              <strong className="text-white">{threadCount}</strong>
+            </div>
+
+            {mechanism === "tsl" && (
+              <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-300">
+                <div className="flex items-center gap-1.5 font-bold mb-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Ciclos de CPU Malgastados:
+                </div>
+                <div className="text-xl font-bold font-mono text-amber-400">
+                  {wastedCycles.toLocaleString()} ops
+                </div>
+                <p className="text-[10px] text-amber-400/80 mt-1">
+                  Quemados en bucle Spinlock <code className="bg-slate-950 px-1 py-0.5 rounded">while(TSL)</code> en los otros núcleos.
+                </p>
+              </div>
+            )}
+
+            {mechanism === "semaphore" && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl text-emerald-300">
+                <div className="flex items-center gap-1.5 font-bold mb-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Ciclos de CPU Ahorrados:
+                </div>
+                <div className="text-xl font-bold font-mono text-emerald-400">
+                  +{savedCycles.toLocaleString()} ops
+                </div>
+                <p className="text-[10px] text-emerald-400/80 mt-1">
+                  Hilos dormidos por el Kernel en lugar de quemar ciclos en bucles activos.
+                </p>
+              </div>
+            )}
+
+            {mechanism === "deadlock" && (
+              <div className={`p-3 rounded-xl border text-xs ${
+                deadlockBroken
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                  : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+              }`}>
+                <div className="flex items-center gap-1.5 font-bold mb-1">
+                  {deadlockBroken ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />}
+                  <span>{deadlockBroken ? "Estado del Sistema: Normalizado" : "Estado del Sistema: Interbloqueado"}</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  {deadlockBroken
+                    ? "El ciclo de espera se ha roto exitosamente. Uno de los hilos cedió su recurso y el sistema continúa operando."
+                    : "Ambos hilos retienen un recurso y esperan el del otro. Ninguno puede continuar."}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Botones de Control Específicos por Modo */}
+          <div className="pt-2 border-t border-slate-800 space-y-2">
+            {mechanism === "tsl" && (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleTSLAcquireNext}
+                  className="py-2.5 px-3 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-amber-900/30"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Ejecutar TSL</span>
+                </button>
+                <button
+                  onClick={handleTSLReleaseLock}
+                  className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span>Liberar (lock=0)</span>
+                </button>
+              </div>
+            )}
+
+            {mechanism === "semaphore" && (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleSemaphoreWait}
+                  className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-emerald-900/30"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>wait(S) [P]</span>
+                </button>
+                <button
+                  onClick={handleSemaphoreSignal}
+                  className="py-2.5 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-blue-900/30"
+                >
+                  <span>signal(S) [V]</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {mechanism === "deadlock" && (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleTriggerDeadlock}
+                  className="py-2.5 px-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-rose-900/30"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Provocar Ciclo</span>
+                </button>
+                <button
+                  onClick={handleBreakDeadlock}
+                  className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-emerald-900/30"
+                >
+                  <span>Romper Deadlock</span>
+                </button>
+              </div>
+            )}
+
+            {/* Controles generales (Pausar y Reiniciar) */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsRunning(!isRunning)}
+                className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                <span>{isRunning ? "Pausar Telemetría" : "Reanudar"}</span>
+              </button>
+              <button
+                onClick={handleReset}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-colors cursor-pointer"
+                title="Reiniciar Simulación"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Botón de Explicación Contextual según el Modo */}
+            <div className="pt-2 border-t border-slate-800">
+              {mechanism === "tsl" && (
+                <ExplanationButton
+                  title="¿Qué representa cada elemento? (Modo TSL)"
+                  items={[
+                    { element: "CORE 0-3 (Procesadores)", description: "Núcleos de CPU independientes. Solo uno puede estar en Sección Crítica; los demás ejecutan Spinlock.", color: "#065f46" },
+                    { element: "Heat Spreader (Color del Chip)", description: "Verde = en Sección Crítica. Amarillo = Spinlock activo (quemando CPU). Gris = en espera.", color: "#34d399" },
+                    { element: "Bus de Hardware (Línea Dorada)", description: "Canal físico con señal LOCK# activa: bloquea el acceso al bus durante la ejecución atómica de TSL.", color: "#f59e0b" },
+                    { element: "Módulo RAM (DPRAM)", description: "Memoria de Doble Puerto donde reside la variable lock. Muestra lock=0 (libre) o lock=1 (ocupado).", color: "#1e293b" },
+                    { element: "Ciclos Malgastados", description: "Contador de CPU desperdiciada por los cores que giran en while(TSL) sin poder entrar.", color: "#fbbf24" }
+                  ]}
+                />
+              )}
+              {mechanism === "semaphore" && (
+                <ExplanationButton
+                  title="¿Qué representa cada elemento? (Modo Semáforos)"
+                  items={[
+                    { element: "CORE 0-3 (Procesadores)", description: "Hilos gestionados por el Kernel. Los admitidos trabajan; los bloqueados duermen (Sleep) sin consumir CPU.", color: "#065f46" },
+                    { element: "Heat Spreader Gris", description: "Hilo dormido (Sleep): el Kernel lo retiró de la CPU y lo puso en S.queue. Ahorra 100% de ciclos.", color: "#475569" },
+                    { element: "Bus Azul (Kernel)", description: "El bus es gestionado por el Sistema Operativo. Las operaciones wait/signal son atómicas a nivel de Kernel.", color: "#3b82f6" },
+                    { element: "KERNEL: COLA SLEEP", description: "Cola FIFO donde el SO almacena los hilos suspendidos. signal() despierta al primero de la cola.", color: "#60a5fa" },
+                    { element: "Ciclos Ahorrados", description: "CPU que se salvó porque los hilos bloqueados duermen en vez de girar en bucle activo.", color: "#34d399" }
+                  ]}
+                />
+              )}
+              {mechanism === "deadlock" && (
+                <ExplanationButton
+                  title="¿Qué representa cada elemento? (Modo Deadlock)"
+                  items={[
+                    { element: "CORE 0 y CORE 1", description: "Dos procesos que retienen un recurso y solicitan el del otro. Ninguno puede avanzar.", color: "#881337" },
+                    { element: "Recurso R1 (Azul)", description: "Recurso compartido #1 (ej. Impresora). Retenido por CORE 0 en estado de deadlock.", color: "#3b82f6" },
+                    { element: "Recurso R2 (Violeta)", description: "Recurso compartido #2 (ej. Archivo). Retenido por CORE 1 en estado de deadlock.", color: "#8b5cf6" },
+                    { element: "Cartel de Estado", description: "Indica si el sistema está en Espera Circular (Coffman) o si el deadlock fue roto por Desalojo Forzado.", color: "#f43f5e" },
+                    { element: "Botón Romper Deadlock", description: "Simula la solución del SO: Desalojo Forzado (Preemption) de un recurso para romper el ciclo.", color: "#34d399" }
+                  ]}
+                />
+              )}
+            </div>
           </div>
         </aside>
 
-        {/* Canvas Three.js a Pantalla Completa */}
+        {/* ======================================================================= */}
+        {/* CANVAS THREE.JS (Placa Base de Hardware con Cores, Bus y RAM)           */}
+        {/* ======================================================================= */}
         <div className="w-full h-full">
-          <Canvas 
-            camera={{ position: [0, 5, 9], fov: 45 }}
+          <Canvas
+            camera={{ position: [0, 6.2, 8.5], fov: 42 }}
             style={{ width: "100%", height: "100%" }}
           >
             <Suspense fallback={null}>
-              <LabSceneInner
+              <LabMotherboardScene
                 mechanism={mechanism}
                 threadCount={threadCount}
-                activeThreadInCS={activeThreadInCS}
+                activeThread={activeThread}
                 isRunning={isRunning}
+                semaphoreS={semaphoreS}
+                deadlockBroken={deadlockBroken}
                 onFrameTick={onFrameTick}
+              />
+              <OrbitControls
+                enablePan={true}
+                maxPolarAngle={Math.PI / 2.1}
+                minDistance={4}
+                maxDistance={14}
+                target={[0, 0, 0]}
               />
             </Suspense>
           </Canvas>
         </div>
 
-        {/* Guía de Controles de Cámara Inferior */}
-        <div className="absolute bottom-4 right-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-[10px] text-white/50">
-          Click Izquierdo + Arrastrar: Rotar Cámara 3D | Rueda: Zoom
+        {/* Guía de navegación orbital inferior derecha */}
+        <div className="absolute bottom-4 right-4 z-10 bg-slate-900/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 pointer-events-none shadow-lg">
+          🖱️ Click + Arrastrar: Rotar modelo 3D | Rueda: Zoom
         </div>
       </div>
     </div>
@@ -217,163 +399,283 @@ export function AdvancedSyncLab3D({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * LabSceneInner — Componente interno del Canvas donde sí es válido usar useFrame.
- * Renderiza la escena 3D dual (hardware + microkernel).
+ * LabMotherboardScene — Escena 3D interna de la placa madre y procesadores
  */
-function LabSceneInner({
+function LabMotherboardScene({
   mechanism,
   threadCount,
-  activeThreadInCS,
+  activeThread,
   isRunning,
-  onFrameTick,
+  semaphoreS,
+  deadlockBroken,
+  onFrameTick
 }: {
   mechanism: "tsl" | "semaphore" | "deadlock";
   threadCount: number;
-  activeThreadInCS: number | null;
+  activeThread: number | null;
   isRunning: boolean;
+  semaphoreS: number;
+  deadlockBroken: boolean;
   onFrameTick: (delta: number) => void;
 }) {
-  const busLightRef = useRef<THREE.PointLight>(null);
+  const busPulseRef = useRef<THREE.PointLight>(null);
+  const busLineRef = useRef<THREE.MeshStandardMaterial>(null);
 
   useFrame((state, delta) => {
-    // Pulso de bus de hardware
-    if (busLightRef.current) {
-      busLightRef.current.intensity = 1.5 + Math.sin(state.clock.elapsedTime * 8) * 0.8;
-    }
-    // Despachar telemetría al componente padre
     onFrameTick(delta);
+
+    // Pulso lumínico del bus de hardware
+    if (busPulseRef.current) {
+      const freq = mechanism === "tsl" ? 8 : 3;
+      busPulseRef.current.intensity = 2.0 + Math.sin(state.clock.elapsedTime * freq) * 1.0;
+    }
   });
 
   return (
-    <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 15, 10]} intensity={1.5} />
-      <pointLight ref={busLightRef} position={[0, -0.5, 0]} color={mechanism === "deadlock" ? "#ff2d2d" : "#00ffff"} distance={15} />
+    <group position={[0, -0.4, 0]}>
+      {/* Iluminación clara de estudio de hardware */}
+      <ambientLight intensity={1.2} color="#ffffff" />
+      <directionalLight position={[6, 9, 6]} intensity={2.5} castShadow />
+      <directionalLight position={[-6, 4, 3]} intensity={1.2} color="#e0f2fe" />
 
-      <OrbitControls enablePan={true} maxPolarAngle={Math.PI / 2.05} minDistance={4} maxDistance={18} />
+      {/* ========================================================================= */}
+      {/* PLACA BASE (PCB DE SILICIO)                                               */}
+      {/* ========================================================================= */}
+      <RoundedBox args={[8.4, 0.18, 6.6]} radius={0.06} receiveShadow>
+        <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.7} />
+      </RoundedBox>
 
-      {/* Grid de Fondo */}
-      <gridHelper args={[20, 20, "#00ffff", "#0a2233"]} position={[0, -2.5, 0]} />
+      {/* ========================================================================= */}
+      {/* LOS 4 NÚCLEOS DE CPU (CORE 0 AL CORE 3)                                    */}
+      {/* ========================================================================= */}
+      {[-2.5, -0.8, 0.8, 2.5].map((x, idx) => {
+        // Lógica de estado para cada core según el mecanismo
+        let isCoreActive = false;
+        let isCoreSpinning = false;
+        let isCoreSleeping = false;
+        let isCoreDeadlocked = false;
 
-      {/* ========================================== */}
-      {/* PLANO INFERIOR: HARDWARE / SILICIO (TSL)    */}
-      {/* ========================================== */}
-      <group position={[0, -1.8, 0]}>
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[11, 0.2, 7]} />
-          <meshStandardMaterial color="#081424" roughness={0.3} metalness={0.8} />
-        </mesh>
-        <Text position={[-4.5, 0.15, -2.8]} fontSize={0.2} color="#00ffff" anchorX="left">
-          NIVEL 1: SILICIO / HARDWARE BUS & DPRAM
-        </Text>
+        if (mechanism === "tsl") {
+          isCoreActive = activeThread === idx;
+          isCoreSpinning = !isCoreActive;
+        } else if (mechanism === "semaphore") {
+          isCoreActive = idx < semaphoreS;
+          isCoreSleeping = idx >= semaphoreS;
+        } else if (mechanism === "deadlock") {
+          if (!deadlockBroken) {
+            isCoreDeadlocked = idx === 0 || idx === 1;
+          } else {
+            isCoreActive = idx === 0;
+            isCoreSleeping = idx === 1;
+          }
+        }
 
-        {/* Bus de Datos Compartido con Señal Atómica LOCK# */}
-        <mesh position={[0, 0.15, 0]}>
-          <boxGeometry args={[9, 0.08, 0.6]} />
-          <meshBasicMaterial color={mechanism === "tsl" ? "#ffaa00" : "#00ff88"} />
-        </mesh>
-        <Text position={[0, 0.25, 0]} fontSize={0.14} color="#000000" anchorX="center">
-          SHARED BUS: HARDWARE LOCK# LINE
-        </Text>
-
-        {/* Celda Central de Bandera Atómica (target / lock) */}
-        <group position={[0, 0.4, -1.8]}>
-          <RoundedBox args={[1.8, 0.6, 1.2]} radius={0.05}>
-            <meshStandardMaterial color="#030814" roughness={0.1} metalness={0.9} />
-          </RoundedBox>
-          <Text position={[0, 0.12, 0.61]} fontSize={0.12} color="#38bdf8">
-            DPRAM FLAG
-          </Text>
-          <Text position={[0, -0.12, 0.61]} fontSize={0.16} color={activeThreadInCS !== null ? "#ff2d2d" : "#00ff88"}>
-            {activeThreadInCS !== null ? "lock = TRUE" : "lock = FALSE"}
-          </Text>
-        </group>
-
-        {/* Núcleos CPU Físicos (Core 0 a Core N) */}
-        {Array.from({ length: Math.min(threadCount, 4) }).map((_, i) => (
-          <group key={i} position={[-3.3 + i * 2.2, 0.3, 1.8]}>
-            <RoundedBox args={[1.6, 0.4, 1.2]} radius={0.04}>
-              <meshStandardMaterial color={activeThreadInCS === i ? "#0284c7" : "#0f172a"} metalness={0.8} roughness={0.2} />
+        return (
+          <group key={idx} position={[x, 0.18, -1.8]}>
+            {/* Socket / Chasis del procesador */}
+            <RoundedBox args={[1.25, 0.18, 1.25]} radius={0.03} castShadow>
+              <meshStandardMaterial
+                color={
+                  isCoreDeadlocked
+                    ? "#881337"
+                    : isCoreActive
+                    ? "#065f46"
+                    : isCoreSpinning
+                    ? "#78350f"
+                    : isCoreSleeping
+                    ? "#1e293b"
+                    : "#1e3a8a"
+                }
+                metalness={0.7}
+                roughness={0.3}
+              />
             </RoundedBox>
-            <Text position={[0, 0.08, 0.61]} fontSize={0.12} color="#ffffff">
-              {`CPU CORE ${i}`}
+
+            {/* Heat Spreader plateado superior del chip */}
+            <mesh position={[0, 0.1, 0]}>
+              <boxGeometry args={[0.95, 0.05, 0.95]} />
+              <meshStandardMaterial
+                color={
+                  isCoreDeadlocked
+                    ? "#f43f5e"
+                    : isCoreActive
+                    ? "#34d399"
+                    : isCoreSpinning
+                    ? "#fbbf24"
+                    : isCoreSleeping
+                    ? "#475569"
+                    : "#60a5fa"
+                }
+                metalness={0.9}
+                roughness={0.2}
+              />
+            </mesh>
+
+            {/* Rótulo del Núcleo */}
+            <Text position={[0, 0.35, 0]} fontSize={0.16} color="#ffffff">
+              {`CORE ${idx}`}
             </Text>
-            <Text position={[0, -0.08, 0.61]} fontSize={0.09} color={activeThreadInCS === i ? "#38bdf8" : "#64748b"}>
-              {activeThreadInCS === i ? "EJECUTANDO CRÍTICA" : (mechanism === "tsl" ? "SPINLOCK" : mechanism === "deadlock" ? "BLOQUEADO" : "IDLE")}
+
+            {/* Estado del Núcleo */}
+            <Text
+              position={[0, -0.05, 0.72]}
+              fontSize={0.11}
+              color={
+                isCoreDeadlocked
+                  ? "#fca5a5"
+                  : isCoreActive
+                  ? "#34d399"
+                  : isCoreSpinning
+                  ? "#fbbf24"
+                  : isCoreSleeping
+                  ? "#94a3b8"
+                  : "#60a5fa"
+              }
+              anchorX="center"
+            >
+              {isCoreDeadlocked
+                ? "[ DEADLOCK: BLOQUEADO ]"
+                : isCoreActive
+                ? "[ SECCIÓN CRÍTICA ]"
+                : isCoreSpinning
+                ? "[ SPINLOCK while(TSL) ]"
+                : isCoreSleeping
+                ? "[ DORMIDO / SLEEP ]"
+                : "[ EN ESPERA ]"}
             </Text>
           </group>
-        ))}
-      </group>
+        );
+      })}
 
-      {/* Columnas Conectoras entre Hardware y Microkernel */}
-      {[-4.5, 4.5].map((x, i) => (
-        <mesh key={i} position={[x, 0.2, 0]}>
-          <cylinderGeometry args={[0.08, 0.08, 3.8]} />
-          <meshStandardMaterial color="#00ffff" roughness={0.2} metalness={0.9} />
-        </mesh>
-      ))}
+      {/* ========================================================================= */}
+      {/* MODO DEADLOCK: RECURSOS COMPARTIDOS R1 Y R2 CON GRAFO DE DEPENDENCIAS      */}
+      {/* ========================================================================= */}
+      {mechanism === "deadlock" && (
+        <group position={[0, 0.25, -0.2]}>
+          {/* Recurso R1 */}
+          <group position={[-1.2, 0.2, 0]}>
+            <RoundedBox args={[0.8, 0.3, 0.8]} radius={0.03} castShadow>
+              <meshStandardMaterial color="#3b82f6" metalness={0.8} roughness={0.2} />
+            </RoundedBox>
+            <Text position={[0, 0.22, 0]} fontSize={0.14} color="#ffffff">
+              R1 (Impresora)
+            </Text>
+            <Text position={[0, -0.22, 0.45]} fontSize={0.1} color="#93c5fd">
+              {deadlockBroken ? "Asignado a: CORE 0" : "Retenido por: CORE 0"}
+            </Text>
+          </group>
 
-      {/* ========================================== */}
-      {/* PLANO SUPERIOR: MICROKERNEL / SOFTWARE    */}
-      {/* ========================================== */}
-      <group position={[0, 1.8, 0]}>
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[11, 0.2, 7]} />
-          <meshStandardMaterial color="#0b1728" roughness={0.4} metalness={0.6} transparent opacity={0.85} />
+          {/* Recurso R2 */}
+          <group position={[1.2, 0.2, 0]}>
+            <RoundedBox args={[0.8, 0.3, 0.8]} radius={0.03} castShadow>
+              <meshStandardMaterial color="#8b5cf6" metalness={0.8} roughness={0.2} />
+            </RoundedBox>
+            <Text position={[0, 0.22, 0]} fontSize={0.14} color="#ffffff">
+              R2 (Archivo)
+            </Text>
+            <Text position={[0, -0.22, 0.45]} fontSize={0.1} color="#c4b5fd">
+              {deadlockBroken ? "Liberado por Desalojo" : "Retenido por: CORE 1"}
+            </Text>
+          </group>
+
+          {/* Cartel 3D de Estado de Deadlock */}
+          <Text
+            position={[0, 0.75, 0]}
+            fontSize={0.15}
+            color={deadlockBroken ? "#34d399" : "#f43f5e"}
+            anchorX="center"
+          >
+            {deadlockBroken
+              ? "CICLO ROTO // EJECUCIÓN NORMALIZADA MEDIANTE DESALOJO"
+              : "ESPERA CIRCULAR MUTUA // INTERBLOQUEO COFFMAN"}
+          </Text>
+        </group>
+      )}
+
+      {/* ========================================================================= */}
+      {/* BUS DE MEMORIA CENTRAL CON SEÑAL LOCK#                                    */}
+      {/* ========================================================================= */}
+      {mechanism !== "deadlock" && (
+        <group position={[0, 0.12, 0]}>
+          {/* Pista del bus en el circuito */}
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[7.0, 0.04, 0.35]} />
+            <meshStandardMaterial
+              ref={busLineRef as any}
+              color={mechanism === "tsl" ? "#f59e0b" : "#3b82f6"}
+              emissive={mechanism === "tsl" ? "#f59e0b" : "#2563eb"}
+              emissiveIntensity={0.8}
+            />
+          </mesh>
+          <pointLight
+            ref={busPulseRef as any}
+            position={[0, 0.4, 0]}
+            color={mechanism === "tsl" ? "#f59e0b" : "#3b82f6"}
+            distance={5}
+          />
+
+          {/* Rótulo del Bus */}
+          <Text position={[0, 0.28, 0]} fontSize={0.13} color="#ffffff">
+            {mechanism === "tsl"
+              ? "BUS DE HARDWARE // SEÑAL LOCK# ACTIVA (Bus Bloqueado Atómicamente)"
+              : "BUS DE DATOS COMPARTIDO // GESTIONADO POR EL KERNEL"}
+          </Text>
+        </group>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MÓDULO DE MEMORIA RAM COMPARTIDA (DPRAM)                                  */}
+      {/* ========================================================================= */}
+      <group position={[-1.9, 0.32, 1.8]}>
+        <RoundedBox args={[2.3, 0.36, 1.2]} radius={0.04} castShadow>
+          <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.3} />
+        </RoundedBox>
+
+        {/* Pantalla del registro de memoria */}
+        <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[2.0, 0.8]} />
+          <meshBasicMaterial color="#020617" />
         </mesh>
-        <Text position={[-4.5, 0.15, -2.8]} fontSize={0.2} color="#00ff88" anchorX="left">
-          NIVEL 2: MICROKERNEL / PLANIFICADOR & SEMÁFOROS
+
+        <Text position={[0, 0.21, -0.15]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.13} color="#94a3b8">
+          MEMORIA RAM (DPRAM)
         </Text>
 
-        {/* Semáforo Central */}
-        <group position={[0, 0.6, -0.5]}>
-          <mesh>
-            <cylinderGeometry args={[0.8, 0.8, 0.8, 32]} />
-            <meshStandardMaterial color="#10b981" metalness={0.8} roughness={0.2} />
-          </mesh>
-          <Text position={[0, 0.15, 0.85]} fontSize={0.16} color="#ffffff">
-            SEMAPHORE S
-          </Text>
-          <Text position={[0, -0.15, 0.85]} fontSize={0.25} color="#000000">
-            {mechanism === "semaphore" ? "S = 2" : mechanism === "deadlock" ? "MUTEX LOCKED" : "MUTEX = 1"}
-          </Text>
-        </group>
-
-        {/* Cola de Hilos Bloqueados (Sleep Queue) */}
-        <group position={[-3.2, 0.4, 0.8]}>
-          <Text position={[0, 0.5, 0]} fontSize={0.14} color="#f87171">
-            SLEEP QUEUE (S.queue)
-          </Text>
-          {Array.from({ length: Math.max(0, threadCount - 1) }).map((_, i) => (
-            <mesh key={i} position={[i * 0.7 - 0.7, 0, 0]}>
-              <capsuleGeometry args={[0.18, 0.35, 8, 16]} />
-              <meshStandardMaterial color={mechanism === "deadlock" ? "#991b1b" : "#ef4444"} roughness={0.5} opacity={0.7} transparent />
-            </mesh>
-          ))}
-        </group>
-
-        {/* Hilo Activo en Sección Crítica */}
-        <group position={[3.2, 0.4, 0.8]}>
-          <Text position={[0, 0.5, 0]} fontSize={0.14} color="#34d399">
-            {mechanism === "deadlock" ? "NINGUNO EJECUTANDO" : "RUNNING IN CS"}
-          </Text>
-          {activeThreadInCS !== null && (
-            <mesh position={[0, 0, 0]}>
-              <capsuleGeometry args={[0.22, 0.5, 8, 16]} />
-              <meshStandardMaterial color="#10b981" roughness={0.2} metalness={0.5} />
-            </mesh>
-          )}
-        </group>
-
-        {/* Deadlock: Flechas circulares de espera */}
-        {mechanism === "deadlock" && (
-          <group position={[0, 0.8, 1.5]}>
-            <Text position={[0, 0, 0]} fontSize={0.18} color="#ff4444" anchorX="center">
-              ⚠ ESPERA CIRCULAR DETECTADA: T0→R1→T1→R0→T0
-            </Text>
-          </group>
-        )}
+        <Text
+          position={[0, 0.21, 0.15]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          fontSize={0.2}
+          color={mechanism === "tsl" ? (activeThread !== null ? "#fbbf24" : "#34d399") : "#34d399"}
+        >
+          {mechanism === "tsl"
+            ? (activeThread !== null ? "lock = 1 [OCUPADO]" : "lock = 0 [LIBRE]")
+            : `S.value = ${semaphoreS}`}
+        </Text>
       </group>
-    </>
+
+      {/* ========================================================================= */}
+      {/* BANDEJA DEL KERNEL: COLA DE SUSPENSIÓN (SLEEP QUEUE)                      */}
+      {/* ========================================================================= */}
+      <group position={[1.9, 0.32, 1.8]}>
+        <RoundedBox args={[2.3, 0.36, 1.2]} radius={0.04} castShadow>
+          <meshStandardMaterial color="#0f172a" metalness={0.5} roughness={0.5} />
+        </RoundedBox>
+
+        <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[2.0, 0.8]} />
+          <meshBasicMaterial color="#020617" />
+        </mesh>
+
+        <Text position={[0, 0.21, -0.15]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.13} color="#60a5fa">
+          KERNEL: COLA SLEEP
+        </Text>
+
+        <Text position={[0, 0.21, 0.15]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.16} color="#e2e8f0">
+          {mechanism === "semaphore"
+            ? (semaphoreS < 0 ? `${Math.abs(semaphoreS)} Hilo(s) Suspendidos` : "0 Hilos en Espera")
+            : (mechanism === "tsl" ? "Sin uso (Spinlocks en CPU)" : (deadlockBroken ? "1 Hilo Desalojado" : "Bloqueo Mutuo"))}
+        </Text>
+      </group>
+    </group>
   );
 }

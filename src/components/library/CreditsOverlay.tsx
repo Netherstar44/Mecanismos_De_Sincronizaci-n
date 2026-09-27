@@ -19,68 +19,79 @@ export function CreditsOverlay({
         >
           {/* Backdrop blur */}
           <div 
-            className="absolute inset-0 bg-[#030811]/90 backdrop-blur-md"
+            className="absolute inset-0 bg-slate-950/85 backdrop-blur-md"
             onClick={onClose}
           />
           
           <motion.div 
-            initial={{ y: 50, opacity: 0 }}
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 20, opacity: 0 }}
-            className="relative w-full max-w-4xl max-h-[85vh] bg-black border border-[#00ffff]/30 shadow-[0_0_30px_rgba(0,255,255,0.1)] overflow-y-auto custom-scrollbar"
+            className="relative w-full max-w-4xl max-h-[88vh] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-y-auto custom-scrollbar text-slate-100 font-sans"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-black/90 backdrop-blur-md border-b border-[#00ffff]/20 p-6 flex justify-between items-center z-10">
+            <div className="sticky top-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 p-6 flex justify-between items-center z-10">
               <div>
-                <h2 className="font-sans text-2xl md:text-3xl font-black uppercase tracking-tighter text-white">
-                  Registro del Sistema
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                  Autores & Referencias Bibliográficas
                 </h2>
-                <div className="font-mono text-xs text-[#00ffff]/70 mt-1">
-                  &gt; AUTORES Y REFERENCIAS BIBLIOGRÁFICAS //
+                <div className="text-xs text-slate-400 mt-1">
+                  Mecanismos de Sincronización en Sistemas Operativos — Formato APA 7ma Edición
                 </div>
               </div>
               
               <button 
                 onClick={onClose}
-                className="w-10 h-10 bg-[#00ffff]/10 hover:bg-[#00ffff]/20 flex items-center justify-center rounded-full text-[#00ffff] transition-colors border border-[#00ffff]/30"
+                className="w-9 h-9 bg-slate-800 hover:bg-slate-700 flex items-center justify-center rounded-xl text-slate-300 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 md:p-10 space-y-16">
+            <div className="p-6 md:p-8 space-y-12">
               
               {/* Autores */}
               <section>
-                <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
-                  &lt; ARQUITECTOS DE LA SIMULACIÓN /&gt;
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2.5 mb-5 flex items-center gap-2">
+                  <span>Arquitectos del Proyecto & Desarrollo</span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
-                  <div className="bg-[#030811] p-6 border border-white/10 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-[#00ffff]" />
-                    <h4 className="font-sans text-lg font-bold mb-2">Jose Correa</h4>
-                    <p className="font-mono text-xs text-white/50">DESARROLLO & ARQUITECTURA</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition-all">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs mb-3">
+                      JC
+                    </div>
+                    <h4 className="text-base font-bold text-white mb-1">Jose Correa</h4>
+                    <p className="text-xs text-blue-400 font-medium">Desarrollo & Arquitectura 3D</p>
+                    <p className="text-[11px] text-slate-400 mt-2">Sistemas Operativos — Concurrencia</p>
                   </div>
-                  <div className="bg-[#030811] p-6 border border-white/10 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-[#00ff88]" />
-                    <h4 className="font-sans text-lg font-bold mb-2">Carlos Rincon</h4>
-                    <p className="font-mono text-xs text-white/50">DESARROLLO & ARQUITECTURA</p>
+
+                  <div className="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition-all">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs mb-3">
+                      CR
+                    </div>
+                    <h4 className="text-base font-bold text-white mb-1">Carlos Rincon</h4>
+                    <p className="text-xs text-emerald-400 font-medium">Desarrollo & Simulación Didáctica</p>
+                    <p className="text-[11px] text-slate-400 mt-2">Sistemas Operativos — Algoritmos</p>
                   </div>
-                  <div className="bg-[#030811] p-6 border border-white/10 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-[#38bdf8]" />
-                    <h4 className="font-sans text-lg font-bold mb-2">Sebastian Charry</h4>
-                    <p className="font-mono text-xs text-white/50">DESARROLLO & ARQUITECTURA</p>
+
+                  <div className="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition-all">
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs mb-3">
+                      SC
+                    </div>
+                    <h4 className="text-base font-bold text-white mb-1">Sebastian Charry</h4>
+                    <p className="text-xs text-purple-400 font-medium">Desarrollo & Modelado de Procesos</p>
+                    <p className="text-[11px] text-slate-400 mt-2">Sistemas Operativos — Arquitectura</p>
                   </div>
                 </div>
               </section>
 
               {/* Bibliografía Oficial APA 7ma Edición */}
               <section>
-                <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
-                  &lt; BASES DE DATOS Y REFERENCIAS BIBLIOGRÁFICAS (FORMATO APA 7MA EDICIÓN) /&gt;
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2.5 mb-5 flex items-center gap-2">
+                  <span>Referencias Bibliográficas Académicas (Normas APA 7ma Edición)</span>
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-serif text-sm text-white/80">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300">
                   <BibliographyEntry
                     num="01"
                     text='BYJU&apos;S CS. (2023). Semaphores in Operating System. BYJU&apos;S GATE Notes.'
@@ -121,61 +132,62 @@ export function CreditsOverlay({
 
               {/* Guía de Citas en Texto */}
               <section>
-                <h3 className="font-mono text-sm text-[#00ff88] border-b border-[#00ff88]/20 pb-2 mb-6">
-                  &lt; ÍNDICE DE CITAS EN TEXTO /&gt;
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2.5 mb-5 flex items-center gap-2">
+                  <span>Índice Rápido de Citas Aplicadas en el Simulador</span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs text-white/70">
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[1]</span> Dijkstra, E. W. (1965) — Origen de semáforos y operaciones P y V.
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-300">
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[1]</span>
+                    <span>Dijkstra, E. W. (1965) — Origen histórico de semáforos, suspensión en kernel y primitivas atómicas P y V.</span>
                   </div>
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[2]</span> Silberschatz et al. (2018) — Mecanismos de sincronización, TSL y Semáforos.
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[2]</span>
+                    <span>Silberschatz et al. (2018) — Exclusión mutua, soporte de hardware (TSL) y semáforos contadores.</span>
                   </div>
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[3]</span> Rinard, M. C. (MIT 1998) — Operaciones de sincronización a nivel hardware/software.
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[3]</span>
+                    <span>Rinard, M. C. (MIT 1998) — Línea LOCK# de bus, operaciones atómicas indivisibles de procesador.</span>
                   </div>
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[4]</span> GeeksforGeeks (2025) — Algoritmos de sincronización de hardware.
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[4]</span>
+                    <span>GeeksforGeeks (2025) — Algoritmos de sincronización por hardware: Spinlocks, Test-and-Set y Swap.</span>
                   </div>
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[5]</span> Wikipedia (2026) — Instrucción Test-and-Set y exclusión con Spinlocks.
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[5]</span>
+                    <span>Wikipedia (2026) — Arquitectura de instrucción Test-and-Set en microprocesadores modernos.</span>
                   </div>
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[6]</span> BYJU&apos;S (2023) — Semáforos binarios y contadores en SO.
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[6]</span>
+                    <span>BYJU&apos;S (2023) — Semáforos binarios (Mutex) y contadores con colas de procesos bloqueados.</span>
                   </div>
-                  <div className="bg-[#030811] p-3 border border-white/10 rounded">
-                    <span className="text-[#00ffff] font-bold">[7]</span> TutorialsPoint (2026) — Implementación Productor-Consumidor.
+                  <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-start gap-2.5">
+                    <span className="text-blue-400 font-bold">[7]</span>
+                    <span>TutorialsPoint (2026) — Implementación didáctica del problema Productor-Consumidor.</span>
                   </div>
                 </div>
               </section>
 
-              {/* Documentación técnica */}
+              {/* Repositorio GitHub */}
               <section>
-                <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
-                  &lt; DEPENDENCIAS DEL SISTEMA /&gt;
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-serif text-sm text-white/80">
-                  <BibliographyEntry num="T1" text="Three.js — Biblioteca JavaScript para gráficos 3D acelerados por GPU." href="https://threejs.org/docs/" />
-                  <BibliographyEntry num="T2" text="React Three Fiber — Renderizador declarativo de React para Three.js." href="https://r3f.docs.pmnd.rs/" />
-                  <BibliographyEntry num="T3" text="React 19 — Biblioteca central para interfaces de usuario reactivas." href="https://react.dev/" />
-                  <BibliographyEntry num="T4" text="Cloudflare Pages — Plataforma de ejecución y despliegue edge global." href="https://pages.cloudflare.com/" />
+                <div className="p-5 bg-slate-950/60 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-bold text-white text-sm">Repositorio Oficial en GitHub</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">Código fuente, esquemas 3D y documentación de despliegue en Cloudflare Pages.</p>
+                  </div>
+                  <a
+                    href="https://github.com/Netherstar44/Mecanismos_De_Sincronizaci-n"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold tracking-wide transition-colors shrink-0 text-center"
+                  >
+                    Ver en GitHub
+                  </a>
                 </div>
               </section>
 
-              {/* Open Source */}
-              <section>
-                <h3 className="font-mono text-sm text-[#00ffff] border-b border-[#00ffff]/20 pb-2 mb-6">
-                  &lt; REPOSITORIO CENTRAL GITHUB /&gt;
-                </h3>
-                <div className="font-sans text-base text-white/80 p-6 bg-[#030811] border border-white/10 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[#00ffff]" />
-                  Código fuente y arquitectura del simulador disponible en GitHub: <a href="https://github.com/Netherstar44/Mecanismos_De_Sincronizaci-n" target="_blank" rel="noopener noreferrer" className="text-[#00ffff] hover:text-white hover:underline transition-colors font-bold">Netherstar44/Mecanismos_De_Sincronizaci-n</a>.
-                </div>
-              </section>
-
-              <div className="pt-8 border-t border-white/10 font-mono text-xs text-white/40 flex justify-between">
-                <span>LABORATORIO DE SISTEMAS OPERATIVOS // V2.0</span>
-                <span>FIN DEL REGISTRO</span>
+              <div className="pt-4 border-t border-slate-800 text-xs text-slate-500 flex justify-between">
+                <span>Proyecto de Sistemas Operativos // Concurrencia & Sincronización</span>
+                <span>Edición 2026</span>
               </div>
             </div>
           </motion.div>
@@ -188,17 +200,17 @@ export function CreditsOverlay({
 function BibliographyEntry({ num, text, href }: { num: string; text: string; href?: string }) {
   return (
     <div className="relative pl-8">
-      <span className="font-mono text-xs absolute left-0 top-1 text-[#00ffff]">[{num}]</span>
-      <span>{text}</span>
+      <span className="font-mono text-xs absolute left-0 top-1 text-blue-400 font-bold">[{num}]</span>
+      <span className="leading-relaxed">{text}</span>
       {href && (
         <a
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center ml-2 align-middle hover:scale-110 transition-transform opacity-70 hover:opacity-100"
-          title="Ver fuente"
+          className="inline-flex items-center ml-2 align-middle hover:scale-110 transition-transform opacity-70 hover:opacity-100 text-blue-400"
+          title="Ver enlace a la fuente académica"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00ffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
             <polyline points="15 3 21 3 21 9"></polyline>
             <line x1="10" y1="14" x2="21" y2="3"></line>

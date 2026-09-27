@@ -1,103 +1,28 @@
-import { useState, useEffect } from "react";
-import { Text, Html, RoundedBox } from "@react-three/drei";
+import { useState, useEffect, Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Text, RoundedBox, OrbitControls } from "@react-three/drei";
+import { Box, Play, Pause, Plus, Minus } from "lucide-react";
+import { ExplanationButton } from "@/components/ui/ExplanationButton";
+
+export interface ProducerConsumerProps {
+  buffer?: (number | null)[];
+  mutex?: number;
+}
 
 /**
- * ProducerConsumerScene — Simulador Didáctico 3D:
- * "Problema del Productor-Consumidor con Búfer Limitado (N = 5)"
- * 
- * Semáforos de Coordinación:
- * - semaphore mutex = 1; // Exclusión mutua para modificar el búfer compartido
- * - semaphore empty = 5; // Espacios vacíos disponibles (inicia en N=5)
- * - semaphore full  = 0; // Elementos listos para consumir (inicia en 0)
+ * ProducerConsumer3DScene — Componente puramente 3D (sin Drei Html transform).
+ * No contiene elementos HTML proyectados que desfasen el cursor del mouse.
  */
-export function ProducerConsumerScene() {
+export function ProducerConsumer3DScene({
+  buffer = [101, 102, null, null, null],
+  mutex = 1
+}: ProducerConsumerProps) {
   const BUFFER_SIZE = 5;
-  const [buffer, setBuffer] = useState<(number | null)[]>([101, 102, null, null, null]);
-  const [mutex, setMutex] = useState(1);
-  const [empty, setEmpty] = useState(3);
-  const [full, setFull] = useState(2);
-  const [autoRun, setAutoRun] = useState(false);
-  const [log, setLog] = useState("Búfer inicializado con 2 elementos. empty=3, full=2, mutex=1.");
-  const [nextItemId, setNextItemId] = useState(103);
-
-  // Acción Productor()
-  const produceItem = () => {
-    if (empty <= 0) {
-      setLog("PRODUCTOR BLOQUEADO: wait(empty) falló (empty <= 0). Búfer lleno. El hilo productor duerme.");
-      return;
-    }
-
-    // 1. wait(empty)
-    const newEmpty = empty - 1;
-    // 2. wait(mutex)
-    setMutex(0);
-
-    // 3. insertar_item_en_bufer(item)
-    const emptyIndex = buffer.findIndex(val => val === null);
-    if (emptyIndex !== -1) {
-      const newBuffer = [...buffer];
-      newBuffer[emptyIndex] = nextItemId;
-      setBuffer(newBuffer);
-      setNextItemId(prev => prev + 1);
-
-      // 4. signal(mutex)
-      setMutex(1);
-      // 5. signal(full)
-      const newFull = full + 1;
-      setEmpty(newEmpty);
-      setFull(newFull);
-      setLog(`PRODUCTOR: insertó paquete #${nextItemId} en ranura [${emptyIndex}]. empty=${newEmpty}, full=${newFull}, mutex=1.`);
-    }
-  };
-
-  // Acción Consumidor()
-  const consumeItem = () => {
-    if (full <= 0) {
-      setLog("CONSUMIDOR BLOQUEADO: wait(full) falló (full <= 0). Búfer vacío. El hilo consumidor duerme.");
-      return;
-    }
-
-    // 1. wait(full)
-    const newFull = full - 1;
-    // 2. wait(mutex)
-    setMutex(0);
-
-    // 3. remover_item_del_bufer()
-    const occupiedIndex = buffer.findIndex(val => val !== null);
-    if (occupiedIndex !== -1) {
-      const consumedId = buffer[occupiedIndex];
-      const newBuffer = [...buffer];
-      newBuffer[occupiedIndex] = null;
-      setBuffer(newBuffer);
-
-      // 4. signal(mutex)
-      setMutex(1);
-      // 5. signal(empty)
-      const newEmpty = empty + 1;
-      setEmpty(newEmpty);
-      setFull(newFull);
-      setLog(`CONSUMIDOR: removió paquete #${consumedId} de ranura [${occupiedIndex}]. empty=${newEmpty}, full=${newFull}, mutex=1.`);
-    }
-  };
-
-  // Bucle automático
-  useEffect(() => {
-    if (!autoRun) return;
-    const timer = setInterval(() => {
-      // 55% de probabilidad de producir, 45% de consumir
-      if (Math.random() > 0.45) {
-        produceItem();
-      } else {
-        consumeItem();
-      }
-    }, 1800);
-    return () => clearInterval(timer);
-  }, [autoRun, empty, full, buffer, nextItemId]);
 
   return (
     <group position={[0, -0.4, 0]}>
       {/* Luces */}
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.9} />
       <pointLight position={[0, 4, 3]} intensity={2.5} color="#00ffff" distance={10} />
       <pointLight position={[0, -2, -2]} intensity={1.5} color="#ff00ff" distance={8} />
 
@@ -173,62 +98,222 @@ export function ProducerConsumerScene() {
           {mutex === 1 ? "CANDADO LIBRE" : "SECCIÓN CRÍTICA"}
         </Text>
       </group>
+    </group>
+  );
+}
 
-      {/* Panel Interactivo Flotante (HTML) */}
-      <Html position={[0, -1.0, 1.4]} center transform distanceFactor={5.5}>
-        <div className="w-[430px] bg-[#030811]/95 backdrop-blur-md p-4 rounded-xl border border-[#00ffff]/40 shadow-[0_0_25px_rgba(0,255,255,0.2)] text-white font-mono text-xs select-none">
-          <div className="flex justify-between items-center border-b border-[#00ffff]/30 pb-2 mb-2.5">
-            <span className="text-[#00ffff] font-bold">PRODUCTOR - CONSUMIDOR // BÚFER N=5</span>
+/**
+ * ProducerConsumerApp — Aplicación Completa con Panel HTML Nativo
+ * Los botones son elementos HTML DOM reales sin desfase de puntero ni matrices 3D CSS.
+ */
+export function ProducerConsumerApp() {
+  const [buffer, setBuffer] = useState<(number | null)[]>([101, 102, null, null, null]);
+  const [mutex, setMutex] = useState(1);
+  const [empty, setEmpty] = useState(3);
+  const [full, setFull] = useState(2);
+  const [autoRun, setAutoRun] = useState(false);
+  const [log, setLog] = useState("Búfer inicializado con 2 elementos. empty=3, full=2, mutex=1.");
+  const [nextItemId, setNextItemId] = useState(103);
+
+  // Acción Productor()
+  const produceItem = () => {
+    if (empty <= 0) {
+      setLog("PRODUCTOR BLOQUEADO: wait(empty) falló (empty <= 0). Búfer lleno. El hilo productor duerme.");
+      return;
+    }
+
+    const newEmpty = empty - 1;
+    setMutex(0);
+
+    const emptyIndex = buffer.findIndex(val => val === null);
+    if (emptyIndex !== -1) {
+      const newBuffer = [...buffer];
+      newBuffer[emptyIndex] = nextItemId;
+      setBuffer(newBuffer);
+      setNextItemId(prev => prev + 1);
+
+      setMutex(1);
+      const newFull = full + 1;
+      setEmpty(newEmpty);
+      setFull(newFull);
+      setLog(`PRODUCTOR: insertó paquete #${nextItemId} en ranura [${emptyIndex}]. empty=${newEmpty}, full=${newFull}, mutex=1.`);
+    }
+  };
+
+  // Acción Consumidor()
+  const consumeItem = () => {
+    if (full <= 0) {
+      setLog("CONSUMIDOR BLOQUEADO: wait(full) falló (full <= 0). Búfer vacío. El hilo consumidor duerme.");
+      return;
+    }
+
+    const newFull = full - 1;
+    setMutex(0);
+
+    const occupiedIndex = buffer.findIndex(val => val !== null);
+    if (occupiedIndex !== -1) {
+      const consumedId = buffer[occupiedIndex];
+      const newBuffer = [...buffer];
+      newBuffer[occupiedIndex] = null;
+      setBuffer(newBuffer);
+
+      setMutex(1);
+      const newEmpty = empty + 1;
+      setEmpty(newEmpty);
+      setFull(newFull);
+      setLog(`CONSUMIDOR: removió paquete #${consumedId} de ranura [${occupiedIndex}]. empty=${newEmpty}, full=${newFull}, mutex=1.`);
+    }
+  };
+
+  // Bucle automático
+  useEffect(() => {
+    if (!autoRun) return;
+    const timer = setInterval(() => {
+      if (Math.random() > 0.45) {
+        produceItem();
+      } else {
+        consumeItem();
+      }
+    }, 1800);
+    return () => clearInterval(timer);
+  }, [autoRun, empty, full, buffer, nextItemId]);
+
+  return (
+    <div className="w-full h-full flex flex-col md:flex-row bg-slate-950 text-slate-100 select-none overflow-hidden font-sans">
+      {/* ======================================================================= */}
+      {/* PANEL DE CONTROL NATIVO (100% Precisión de Clic, Cero Desfase)          */}
+      {/* ======================================================================= */}
+      <aside className="w-full md:w-80 lg:w-96 bg-slate-900/95 border-r border-slate-800 p-5 flex flex-col justify-between overflow-y-auto z-10 space-y-4 shrink-0">
+        <div className="space-y-4">
+          {/* Cabecera del Panel */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <Box className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white tracking-tight">Productor-Consumidor</h3>
+                <p className="text-[11px] text-slate-400">Búfer Acotado Circular (N=5)</p>
+              </div>
+            </div>
+
             <button
               onClick={() => setAutoRun(!autoRun)}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${autoRun ? "bg-green-500/20 text-green-400 border-green-500/40" : "bg-white/10 text-white/70 border-white/20"}`}
+              className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer shadow-md ${
+                autoRun
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+              }`}
             >
-              {autoRun ? "PAUSAR AUTO" : "AUTO RUN"}
+              {autoRun ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span>{autoRun ? "Pausar" : "Auto Run"}</span>
             </button>
           </div>
 
           {/* Tres Semáforos en Tiempo Real */}
-          <div className="grid grid-cols-3 gap-2 mb-2.5 text-center text-[10px]">
-            <div className="bg-black/50 p-1.5 rounded border border-white/10">
-              <div className="text-white/60">mutex (Binario)</div>
-              <div className={`text-sm font-bold ${mutex === 1 ? "text-emerald-400" : "text-red-400"}`}>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
+              <div className="text-[10px] text-slate-400">mutex (Binario)</div>
+              <div className={`text-base font-bold font-mono ${mutex === 1 ? "text-emerald-400" : "text-rose-400"}`}>
                 {mutex} ({mutex === 1 ? "Libre" : "Lock"})
               </div>
             </div>
-            <div className="bg-black/50 p-1.5 rounded border border-white/10">
-              <div className="text-white/60">empty (Contador)</div>
-              <div className="text-sm font-bold text-cyan-400">{empty} / 5</div>
+            <div className="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
+              <div className="text-[10px] text-slate-400">empty (Libres)</div>
+              <div className="text-base font-bold font-mono text-cyan-400">{empty} / 5</div>
             </div>
-            <div className="bg-black/50 p-1.5 rounded border border-white/10">
-              <div className="text-white/60">full (Contador)</div>
-              <div className="text-sm font-bold text-orange-400">{full} / 5</div>
+            <div className="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
+              <div className="text-[10px] text-slate-400">full (Listos)</div>
+              <div className="text-base font-bold font-mono text-amber-400">{full} / 5</div>
             </div>
           </div>
 
-          {/* Registro de operaciones */}
-          <div className="bg-black/60 p-2 rounded border border-white/10 mb-2.5 text-[11px] leading-relaxed text-cyan-200">
+          {/* Registro de Operaciones */}
+          <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs text-cyan-200 font-mono leading-relaxed shadow-inner">
+            <span className="text-slate-400 block text-[10px] font-sans font-bold uppercase mb-1">
+              Registro del Kernel:
+            </span>
             {log}
           </div>
 
-          {/* Botones de acción manual */}
-          <div className="grid grid-cols-2 gap-2 text-[10px]">
-            <button
-              onClick={produceItem}
-              disabled={empty <= 0}
-              className="px-2.5 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 disabled:opacity-30 border border-emerald-400/50 rounded text-emerald-200 font-bold transition-colors"
-            >
-              + Producir Item [wait(empty)]
-            </button>
-            <button
-              onClick={consumeItem}
-              disabled={full <= 0}
-              className="px-2.5 py-1.5 bg-orange-600/30 hover:bg-orange-600/50 disabled:opacity-30 border border-orange-400/50 rounded text-orange-200 font-bold transition-colors"
-            >
-              - Consumir Item [wait(full)]
-            </button>
+          {/* Botones Manuales */}
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              Operaciones Manuales:
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                onClick={produceItem}
+                disabled={empty <= 0}
+                className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600 text-white rounded-xl font-medium text-xs flex items-center justify-between transition-colors shadow-md cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Producir Item</span>
+                </div>
+                <span className="text-[10px] font-mono opacity-80">wait(empty)</span>
+              </button>
+
+              <button
+                onClick={consumeItem}
+                disabled={full <= 0}
+                className="w-full py-2.5 px-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-30 disabled:hover:bg-orange-600 text-white rounded-xl font-medium text-xs flex items-center justify-between transition-colors shadow-md cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Minus className="w-3.5 h-3.5" />
+                  <span>Consumir Item</span>
+                </div>
+                <span className="text-[10px] font-mono opacity-80">wait(full)</span>
+              </button>
+            </div>
           </div>
         </div>
-      </Html>
-    </group>
+
+        {/* Pie del Panel: Explicación */}
+        <div className="pt-3 border-t border-slate-800">
+          <ExplanationButton
+            title="¿Qué representa cada elemento en Productor-Consumidor?"
+            items={[
+              { element: "Celdas Circulares (SLOT 0-4)", description: "Las 5 ranuras del búfer circular compartido. Azul = ocupado con un paquete. Gris = vacío.", color: "#0284c7" },
+              { element: "Cubos Verdes (#ID)", description: "Items/paquetes producidos por el hilo Productor. Cada uno tiene un identificador único.", color: "#00ff88" },
+              { element: "Esfera Central (MUTEX)", description: "Semáforo binario de exclusión mutua. Verde (1) = búfer accesible. Rojo (0) = sección crítica bloqueada.", color: "#00ff88" },
+              { element: "Semáforo empty", description: "Semáforo contador: indica cuántos espacios vacíos quedan. Si empty=0, el Productor se bloquea (sleep).", color: "#22d3ee" },
+              { element: "Semáforo full", description: "Semáforo contador: indica cuántos items hay listos. Si full=0, el Consumidor se bloquea (sleep).", color: "#f97316" },
+              { element: "Botón AUTO RUN", description: "Ejecuta automáticamente productores y consumidores aleatorios para observar la dinámica del búfer.", color: "#4ade80" }
+            ]}
+          />
+        </div>
+      </aside>
+
+      {/* ======================================================================= */}
+      {/* CANVAS THREE.JS (Vista 3D Libre y sin Elementos HTML Desfasados)         */}
+      {/* ======================================================================= */}
+      <div className="flex-1 h-full relative">
+        <Canvas camera={{ position: [0, 2.5, 6], fov: 45 }} style={{ width: "100%", height: "100%" }}>
+          <Suspense fallback={null}>
+            <ProducerConsumer3DScene buffer={buffer} mutex={mutex} />
+            <OrbitControls
+              enablePan={true}
+              maxPolarAngle={Math.PI / 2.05}
+              minDistance={3}
+              maxDistance={12}
+              target={[0, 0.4, 0]}
+            />
+          </Suspense>
+        </Canvas>
+
+        {/* Tip de Navegación 3D Flotante */}
+        <div className="absolute bottom-3 right-3 text-[11px] bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-slate-400 pointer-events-none shadow-lg">
+          🖱️ Click y arrastrar: Rotar cámara 3D | Rueda: Zoom
+        </div>
+      </div>
+    </div>
   );
+}
+
+/**
+ * Exportación para compatibilidad directa con las estanterías de libros 3D
+ */
+export function ProducerConsumerScene() {
+  return <ProducerConsumer3DScene />;
 }
