@@ -366,7 +366,7 @@ export function VirtualDesktopOS({
                 : "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
             }`}
           >
-            <Sparkles className="w-4 h-4 text-blue-400" />
+            <img src="/favicon.svg" alt="SyncOS" className="w-4 h-4 object-contain" />
             <span>SyncOS</span>
           </button>
 

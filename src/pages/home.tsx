@@ -38,8 +38,8 @@ export default function Home() {
         <header className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-auto">
           {/* Identificador del Proyecto */}
           <div className="flex items-center gap-3 bg-slate-900/80 backdrop-blur-xl border border-slate-700/60 px-4 py-2 rounded-2xl shadow-xl">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Cpu className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl overflow-hidden border border-cyan-500/40 flex items-center justify-center shadow-lg shadow-cyan-500/10 bg-slate-950 p-0.5">
+              <img src="/favicon.svg" alt="SyncLab Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">

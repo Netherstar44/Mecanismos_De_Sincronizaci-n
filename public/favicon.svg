@@ -1,3 +1,132 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#141c2e" />
+      <stop offset="70%" stop-color="#070a12" />
+      <stop offset="100%" stop-color="#030508" />
+    </radialGradient>
+
+    <!-- Cyan Glow & Gradient -->
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Amber Glow & Gradient -->
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Gold Lock Glow -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <filter id="glowGold" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Metallic border -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#1e293b" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Icon Squircle -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="8" />
+
+  <!-- Outer Microchip Bus Traces -->
+  <g stroke="#1e293b" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M 120 16 L 120 70 L 150 100" />
+    <path d="M 256 16 L 256 90" />
+    <path d="M 392 16 L 392 70 L 362 100" />
+    
+    <path d="M 120 496 L 120 442 L 150 412" />
+    <path d="M 256 496 L 256 422" />
+    <path d="M 392 496 L 392 442 L 362 412" />
+    
+    <path d="M 16 120 L 70 120 L 100 150" />
+    <path d="M 16 256 L 90 256" />
+    <path d="M 16 392 L 70 392 L 100 362" />
+
+    <path d="M 496 120 L 442 120 L 412 150" />
+    <path d="M 496 256 L 422 256" />
+    <path d="M 496 392 L 442 392 L 412 362" />
+  </g>
+
+  <!-- Bus Terminal Nodes -->
+  <g fill="#38bdf8" opacity="0.7">
+    <circle cx="150" cy="100" r="5" />
+    <circle cx="256" cy="90" r="5" />
+    <circle cx="100" cy="150" r="5" />
+    <circle cx="90" cy="256" r="5" />
+  </g>
+  <g fill="#fbbf24" opacity="0.7">
+    <circle cx="362" cy="100" r="5" />
+    <circle cx="412" cy="150" r="5" />
+    <circle cx="422" cy="256" r="5" />
+    <circle cx="362" cy="412" r="5" />
+    <circle cx="150" cy="412" r="5" />
+  </g>
+
+  <!-- Interlocking Concurrency Rings (Threads Sync) -->
+  <!-- Cyan Thread Orbit Ring -->
+  <ellipse cx="216" cy="256" rx="150" ry="150" fill="none" stroke="url(#cyanGrad)" stroke-width="18" filter="url(#glowCyan)" opacity="0.9" />
+  <ellipse cx="216" cy="256" rx="136" ry="136" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.6" stroke-dasharray="16 12" />
+
+  <!-- Amber/Gold Thread Orbit Ring (Interlocking Mutex) -->
+  <ellipse cx="296" cy="256" rx="150" ry="150" fill="none" stroke="url(#amberGrad)" stroke-width="18" filter="url(#glowAmber)" opacity="0.9" />
+  <ellipse cx="296" cy="256" rx="136" ry="136" fill="none" stroke="#fbbf24" stroke-width="3" opacity="0.6" stroke-dasharray="16 12" />
+
+  <!-- Central Processor Core Substrate -->
+  <rect x="176" y="176" width="160" height="160" rx="32" fill="#0b1120" stroke="#334155" stroke-width="6" />
+  <rect x="190" y="190" width="132" height="132" rx="20" fill="#0f172a" stroke="#1e293b" stroke-width="4" />
+
+  <!-- Processor Pin Connectors -->
+  <g fill="#475569">
+    <rect x="196" y="166" width="12" height="10" rx="2" />
+    <rect x="222" y="166" width="12" height="10" rx="2" />
+    <rect x="250" y="166" width="12" height="10" rx="2" />
+    <rect x="278" y="166" width="12" height="10" rx="2" />
+    <rect x="304" y="166" width="12" height="10" rx="2" />
+
+    <rect x="196" y="336" width="12" height="10" rx="2" />
+    <rect x="222" y="336" width="12" height="10" rx="2" />
+    <rect x="250" y="336" width="12" height="10" rx="2" />
+    <rect x="278" y="336" width="12" height="10" rx="2" />
+    <rect x="304" y="336" width="12" height="10" rx="2" />
+  </g>
+
+  <!-- Atomic Synchronization Lock (TSL / Mutex / Semaphore Core) -->
+  <!-- Lock Shackle -->
+  <path d="M 230 240 L 230 216 C 230 200 242 188 256 188 C 270 188 282 200 282 216 L 282 240" 
+        fill="none" stroke="url(#goldGrad)" stroke-width="14" stroke-linecap="round" filter="url(#glowGold)" />
+
+  <!-- Lock Body -->
+  <rect x="218" y="238" width="76" height="60" rx="14" fill="url(#goldGrad)" filter="url(#glowGold)" />
+  
+  <!-- Atomic Core Ring Orbit around Keyhole -->
+  <ellipse cx="256" cy="268" rx="28" ry="12" fill="none" stroke="#0f172a" stroke-width="4" />
+  <ellipse cx="256" cy="268" rx="12" ry="28" fill="none" stroke="#0f172a" stroke-width="4" />
+  
+  <!-- Lock Center Nucleus / Keyhole -->
+  <circle cx="256" cy="264" r="7" fill="#0f172a" />
+  <polygon points="253,266 259,266 261,280 251,280" fill="#0f172a" />
+  <circle cx="256" cy="264" r="3" fill="#ffffff" />
 </svg>
